@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GF Diversiones — RH & Nóminas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--bg:#0a0f1e;--panel:#111827;--panel2:#1a2235;--panel3:#1f2d45;--border:#2d3748;--gold:#f59e0b;--gold2:#d97706;--text:#f1f5f9;--muted:#94a3b8;--green:#10b981;--red:#ef4444;--blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;--orange:#f97316;--pink:#ec4899}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--panel)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+#root{display:flex;height:100vh}
+.sidebar{width:215px;min-width:215px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .22s ease,min-width .22s ease,opacity .18s ease}
+.sidebar.collapsed{width:0;min-width:0;opacity:0;overflow:hidden;border-right:none}
+.btn-toggle-sidebar{background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:4px 8px;border-radius:6px;line-height:1;flex-shrink:0}
+.btn-toggle-sidebar:hover{background:var(--panel2);color:var(--text)}
+.fab-sync{position:fixed;bottom:22px;right:22px;z-index:200;width:48px;height:48px;border-radius:50%;border:none;background:var(--gold);color:#000;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.5);transition:transform .15s,background .15s}
+.fab-sync:hover{transform:scale(1.1);background:var(--gold2)}
+.fab-sync:active{transform:scale(.95)}
+.sidebar-logo{padding:18px 14px 14px;border-bottom:1px solid var(--border)}
+.sidebar-logo h1{font-size:12px;font-weight:700;color:var(--gold);letter-spacing:1.2px;text-transform:uppercase}
+.sidebar-logo p{font-size:10px;color:var(--muted);margin-top:2px}
+.sidebar-group{padding:10px 8px 4px;font-size:10px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;font-weight:600}
+.sidebar-nav{flex:1;padding:6px 8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--muted);border:none;background:none;width:100%;text-align:left;transition:all .12s}
+.nav-item:hover{background:var(--panel2);color:var(--text)}
+.nav-item.active{background:rgba(245,158,11,.14);color:var(--gold);font-weight:500}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.sidebar-footer{padding:10px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:11px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar h2{font-size:15px;font-weight:600}
+.content{flex:1;overflow-y:auto;padding:20px}
+.btn{padding:6px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12.5px;font-weight:500;transition:all .12s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-primary{background:var(--gold);color:#000}.btn-primary:hover{background:var(--gold2)}
+.btn-secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--panel3)}
+.btn-danger{background:rgba(239,68,68,.14);color:var(--red);border:1px solid rgba(239,68,68,.25)}.btn-danger:hover{background:rgba(239,68,68,.24)}
+.btn-green{background:rgba(16,185,129,.14);color:var(--green);border:1px solid rgba(16,185,129,.25)}.btn-green:hover{background:rgba(16,185,129,.24)}
+.btn-blue{background:rgba(59,130,246,.14);color:var(--blue);border:1px solid rgba(59,130,246,.25)}.btn-blue:hover{background:rgba(59,130,246,.24)}
+.btn-sm{padding:3px 9px;font-size:11.5px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:18px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:14px}
+.kpi-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.kpi-value{font-size:20px;font-weight:700;margin-top:3px}
+.kpi-sub{font-size:10.5px;color:var(--muted);margin-top:2px}
+.table-wrap{overflow-x:auto;border-radius:9px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{position:sticky;top:0;z-index:2}
+th{background:var(--panel2);padding:9px 11px;text-align:left;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;border-bottom:1px solid var(--border)}
+th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--text)}
+td{padding:8px 11px;border-bottom:1px solid rgba(45,55,72,.4);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.04)!important}
+tbody tr:nth-child(odd) td{background:transparent}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+.tr-total td{background:rgba(245,158,11,.07)!important;font-weight:700;color:var(--gold)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:500}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-gold{background:rgba(245,158,11,.15);color:var(--gold)}.badge-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge-gray{background:var(--panel2);color:var(--muted)}.badge-purple{background:rgba(139,92,246,.15);color:var(--purple)}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan)}.badge-orange{background:rgba(249,115,22,.15);color:var(--orange)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:13px;padding:22px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:840px}.modal-xl{max-width:1100px}
+.modal-title{font-size:14px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:19px;line-height:1}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.c1{grid-template-columns:1fr}.form-row.c3{grid-template-columns:1fr 1fr 1fr}.form-row.c4{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+label{font-size:11.5px;color:var(--muted);font-weight:500}
+input,select,textarea{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12.5px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+input[type=checkbox]{width:auto;accent-color:var(--gold);cursor:pointer}
+input[type=color]{height:36px;cursor:pointer;padding:2px 4px}
+.check-row{display:flex;align-items:center;gap:7px;cursor:pointer}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+.section-title{font-size:13.5px;font-weight:600}
+.search-bar{position:relative}.search-bar input{padding-left:30px;width:200px}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+.tabs{display:flex;gap:3px;background:var(--panel2);padding:3px;border-radius:7px;margin-bottom:18px;width:fit-content}
+.tab{padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12.5px;color:var(--muted);border:none;background:none;transition:all .12s}
+.tab.active{background:var(--panel);color:var(--text);font-weight:500}
+.flex{display:flex}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.gap-1{gap:4px}.gap-2{gap:8px}.gap-3{gap:12px}
+.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mb-2{margin-bottom:8px}
+.text-muted{color:var(--muted)}.text-gold{color:var(--gold)}.text-green{color:var(--green)}.text-red{color:var(--red)}.text-blue{color:var(--blue)}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+.nomina-wrap{overflow-x:auto}
+.nomina-table{min-width:1200px}
+.nomina-table td input[type=number]{width:80px;background:var(--bg);border:1px solid transparent;border-radius:4px;padding:2px 5px;font-size:11.5px}
+.nomina-table td input[type=number]:focus{border-color:var(--gold)}
+.nomina-table td input[type=checkbox]{width:auto}
+.col-real{background:rgba(59,130,246,.05)!important;font-weight:600;color:var(--blue)}
+.col-efec{background:rgba(16,185,129,.06)!important;font-weight:700;color:var(--green)}
+.col-resta{background:rgba(239,68,68,.04)!important}
+.col-suma{background:rgba(16,185,129,.03)!important}
+.col-total{background:rgba(245,158,11,.08)!important;font-weight:700;color:var(--gold)}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+.dias-card{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:10px}
+.dias-bar{height:6px;background:var(--panel2);border-radius:3px;margin-top:6px;overflow:hidden}
+.dias-fill{height:100%;border-radius:3px;transition:width .4s}
+@keyframes gf-slide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.gf-loading-bar{position:relative;overflow:hidden;width:220px;height:3px;background:var(--border);border-radius:2px}
+.gf-loading-bar::after{content:'';position:absolute;inset:0;background:var(--gold);border-radius:2px;animation:gf-slide 1.4s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ══════════════════════════════════════════════════
+   FIREBASE CONFIG — reemplaza estos valores con los
+   de tu proyecto en https://console.firebase.google.com
+   ══════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCqjGzzn_X6nz17ayTlYZJcl5OV98cm5Ow",
+  authDomain:        "modulo-nominas-gf.firebaseapp.com",
+  projectId:         "modulo-nominas-gf",
+  storageBucket:     "modulo-nominas-gf.firebasestorage.app",
+  messagingSenderId: "365638951018",
+  appId:             "1:365638951018:web:c3d8dd02fe42df00ee6a13"
+};
+
+/* ── GFStore: capa de sincronización Firestore ── */
+const GFStore = (() => {
+  const GF_KEYS = ['gf2_emp','gf2_inc','gf2_tipos','gf2_quin','gf2_prest',
+                   'gf2_rs','gf2_diasdeb','gf2_vacsaldo','gf2_colsref'];
+  const COL = 'gf_data';
+  let db = null;
+  let online = false;
+  let timers = {};
+
+  const dkey = k => k.replace('gf2_','');
+  const lsGet = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
+  const lsSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+  async function init() {
+    try {
+      const configured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'TU_API_KEY';
+      if (!configured) throw new Error('Firebase no configurado');
+
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+
+      // Descarga todos los documentos en paralelo
+      const snaps = await Promise.all(GF_KEYS.map(k => db.collection(COL).doc(dkey(k)).get()));
+      const cloudHasData = snaps.some(s => s.exists);
+
+      if (cloudHasData) {
+        // Nube tiene datos → sobreescribe localStorage con datos de nube
+        snaps.forEach((snap, i) => {
+          if (snap.exists) lsSet(GF_KEYS[i], snap.data().data);
+        });
+      } else {
+        // Nube vacía → sube localStorage a nube (primera vez)
+        const batch = db.batch();
+        GF_KEYS.forEach(k => {
+          const val = lsGet(k);
+          if (val !== null) batch.set(db.collection(COL).doc(dkey(k)), { data: val });
+        });
+        await batch.commit();
+      }
+      online = true;
+    } catch (err) {
+      console.warn('[GFStore] Modo sin conexión:', err.message);
+      online = false;
+    }
+    return online;
+  }
+
+  // Escribe a Firestore con debounce de 800ms (para no saturar en ediciones rápidas)
+  function set(k, v) {
+    if (!db || !online) return;
+    if (timers[k]) clearTimeout(timers[k]);
+    timers[k] = setTimeout(() => {
+      db.collection(COL).doc(dkey(k)).set({ data: v })
+        .catch(err => { console.warn('[GFStore] Error al guardar:', err); online = false; });
+    }, 800);
+  }
+
+  return { init, set, isOnline: () => online };
+})();
+</script>
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef,useCallback}=React;
+
+/* ── HELPERS ── */
+const uuid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+const fmt=n=>'$'+Number(isNaN(n)?0:n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate=d=>d?new Date(d+'T12:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const today=()=>new Date().toISOString().slice(0,10);
+const todayLong=()=>new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const fmtFechaPago=d=>{
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return `${d.getDate()} de ${meses[d.getMonth()]} del ${d.getFullYear()}`;
+};
+const ROKMA_LOGO_DATA_URL='data:image/png;base64,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';
+
+function numLetra(n){
+  n=Math.round(n*100)/100;const e=Math.floor(n);const d=Math.round((n-e)*100);
+  const U=['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE'];
+  const D=['','DIEZ','VEINTE','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+  const C=['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+  function c(x){if(x===0)return'CERO';if(x<20)return U[x];if(x<100)return D[Math.floor(x/10)]+(x%10?' Y '+U[x%10]:'');if(x===100)return'CIEN';if(x<1000)return C[Math.floor(x/100)]+(x%100?' '+c(x%100):'');if(x<2000)return'MIL'+(x%1000?' '+c(x%1000):'');if(x<1000000)return c(Math.floor(x/1000))+' MIL'+(x%1000?' '+c(x%1000):'');return x+''}
+  return c(e)+' PESOS '+String(d).padStart(2,'0')+'/100 MXN';
+}
+
+const normTxt=v=>String(v||'').trim().toUpperCase();
+const findTipo=(tipos,nombre)=>tipos.find(t=>t.nombre===nombre);
+const incidenciaTieneFlag=(inc,tipos,flag)=>{
+  if(!inc?.tipo)return false;
+  return !!findTipo(tipos,inc.tipo)?.[flag];
+};
+function sortIncidenciasCronologicas(incs){
+  return [...incs].map((inc,idx)=>({...inc,__idx:idx})).sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||''))||a.__idx-b.__idx);
+}
+function drawRokmaBrandBox(doc,{x=0,y=0,w=28,h=42,logoSize=18,textScale=1,bgColor=[30,30,30],fgColor=[255,255,255]}={}){
+  doc.setFillColor(...bgColor);doc.rect(x,y,w,h,'F');
+  try{
+    if(ROKMA_LOGO_DATA_URL&&ROKMA_LOGO_DATA_URL!=='__ROKMA_LOGO_DATA_URL__'){
+      const lx=x+(w-logoSize)/2;
+      const ly=y+2.5;
+      doc.addImage(ROKMA_LOGO_DATA_URL,'PNG',lx,ly,logoSize,logoSize);
+    }
+  }catch{}
+  doc.setFont('times','bold');doc.setFontSize(11.8*textScale);doc.setTextColor(...fgColor);
+  doc.text('GRUPO',x+w/2,y+h-11.2*textScale,{align:'center'});
+  doc.text('ROKMA',x+w/2,y+h-4.6*textScale,{align:'center'});
+}
+function revertVacIncidenceEffect(inc,tipos,emps){
+  if(!incidenciaTieneFlag(inc,tipos,'afectaVac'))return LS.get(K.vacSaldo,{});
+  if(inc?._fx?.vacApplied===false)return LS.get(K.vacSaldo,{});
+  const emp=emps.find(e=>e.id===inc.empleadoId);
+  if(!emp)return LS.get(K.vacSaldo,{});
+  const vs=LS.get(K.vacSaldo,{});
+  const cur=Number(vs[emp.id]??emp.diasVacaciones??0);
+  vs[emp.id]=cur+1;
+  LS.set(K.vacSaldo,vs);
+  return vs;
+}
+function applyVacIncidenceEffect(inc,tipos,emps){
+  if(!incidenciaTieneFlag(inc,tipos,'afectaVac'))return {inc,vacSaldo:LS.get(K.vacSaldo,{})};
+  const emp=emps.find(e=>e.id===inc.empleadoId);
+  if(!emp)return {inc,vacSaldo:LS.get(K.vacSaldo,{})};
+  const vs=LS.get(K.vacSaldo,{});
+  const cur=Number(vs[emp.id]??emp.diasVacaciones??0);
+  const vacApplied=cur>0;
+  if(vacApplied){
+    vs[emp.id]=cur-1;
+    LS.set(K.vacSaldo,vs);
+  }
+  return {inc:{...inc,_fx:{...(inc._fx||{}),vacApplied}},vacSaldo:vs};
+}
+function recalcDiasDebFromIncidencias(incs,tipos){
+  const regs=LS.get(K.diasDeb,[]);
+  const ordered=[...regs].map((r,idx)=>({...r,__idx:idx})).sort((a,b)=>String(a.fechaRegistro||'').localeCompare(String(b.fechaRegistro||''))||a.__idx-b.__idx);
+  const map=Object.fromEntries(regs.map(r=>[r.id,{...r,diasUsados:0}]));
+  sortIncidenciasCronologicas(incs).forEach(inc=>{
+    if(!incidenciaTieneFlag(inc,tipos,'afectaDias'))return;
+    const target=ordered.find(r=>{
+      const cur=map[r.id];
+      return cur.empleadoId===inc.empleadoId&&cur.diasUsados<cur.diasDebidos;
+    });
+    if(target){
+      map[target.id]={...map[target.id],diasUsados:Math.min(map[target.id].diasDebidos,map[target.id].diasUsados+1)};
+    }
+  });
+  const updated=regs.map(r=>map[r.id]||r);
+  LS.set(K.diasDeb,updated);
+  return updated;
+}
+const REPORT_HEADER_CONTENT_Y=58;
+
+/* ── LOGO HEADER PARA PDFs ── */
+function addReportHeader(doc,titulo,opts={}){
+  const W=216;
+  const {
+    accent=[210,210,210],
+    textColor=[30,30,30],
+    titleSize=20,
+    bandY=12,
+    bandH=14,
+    bandX=20,
+    bandW=W-28,
+    box={x:10,y:4,w:26,h:44,logoSize:15,textScale:1.1,bgColor:[30,30,30],fgColor:[255,255,255]}
+  }=opts;
+  doc.setFillColor(...accent);doc.rect(bandX,bandY,bandW,bandH,'F');
+  drawRokmaBrandBox(doc,box);
+  doc.setFont('helvetica','bold');doc.setFontSize(titleSize);doc.setTextColor(...textColor);
+  doc.text(titulo,box.x+box.w+70,bandY+bandH/2+3,{align:'center'});
+}
+
+/* ── LOCAL STORAGE ── */
+const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}GFStore.set(k,v);}};
+const K={emp:'gf2_emp',inc:'gf2_inc',tipos:'gf2_tipos',quin:'gf2_quin',prest:'gf2_prest',rs:'gf2_rs',diasDeb:'gf2_diasdeb',vacSaldo:'gf2_vacsaldo',colsRef:'gf2_colsref'};
+
+/* ── SEEDS ── */
+const SEED_RS=[{clave:'MCFR',nombre:'MARY CARMEN FLORES RIVERA',dir:'Calle Chiapas, No. 524, Colonia Valle de Aguayo. C.P. 87020',email:'marycflores@hotmail.com'},{clave:'RGC',nombre:'RODRIGO GONZALEZ CHIO',dir:'Calle Chiapas, No. 524, Colonia Valle de Aguayo. C.P. 87020',email:''},{clave:'GF',nombre:'GF DIVERSIONES, S.A. DE C.V.',dir:'Calle Chiapas, No. 524, Colonia Valle de Aguayo. C.P. 87020',email:'gfdiversiones@gmail.com'},{clave:'N/A',nombre:'GRUPO ROKMA',dir:'Calle Chiapas, No. 524, Colonia Valle de Aguayo. C.P. 87020',email:''}];
+const SEED_TIPOS=[
+  {id:'t1',nombre:'FALTA',descuenta:true,color:'#ef4444',afectaVac:false,afectaDias:false},
+  {id:'t2',nombre:'RETARDO',descuenta:false,color:'#f59e0b',afectaVac:false,afectaDias:false},
+  {id:'t3',nombre:'SALIDA',descuenta:false,color:'#3b82f6',afectaVac:false,afectaDias:false},
+  {id:'t4',nombre:'FALTA POR VACACIONES',descuenta:false,color:'#10b981',afectaVac:true,afectaDias:false},
+  {id:'t5',nombre:'FALTA POR INCAPACIDAD',descuenta:false,color:'#06b6d4',afectaVac:false,afectaDias:false},
+  {id:'t6',nombre:'FALTA POR MATERNIDAD',descuenta:false,color:'#ec4899',afectaVac:false,afectaDias:false},
+  {id:'t7',nombre:'FALTA COMISIÓN / DÍA TRABAJADO',descuenta:false,color:'#f97316',afectaVac:false,afectaDias:true},
+];
+const SEED_EMP=[
+  {id:uuid(),numero:1,nombre:'INFANTE BALDERAS BIANCA SUSANA',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:714.33,cfdiNomina:4725.60,compeBase:5989.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:2,nombre:'RODRIGUEZ PUGA VIDAL ABDIEL',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:571.47,cfdiNomina:4725.60,compeBase:3846.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:3,nombre:'LUNA GONZALEZ RICARDO',rs:'MCFR',sucursal:'ROKMA',salarioDiario:1000,cfdiNomina:8504.21,compeBase:6495.79,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:4,nombre:'PEÑA RODRIGUEZ MARCO ANTONIO',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:857.20,cfdiNomina:4725.60,compeBase:8132.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:5,nombre:'TINAJERO VILLANUEVA CARMEN PAOLA',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:714.33,cfdiNomina:4725.60,compeBase:5989.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:6,nombre:'ANDALON GUEVARA EUNICE',rs:'RGC',sucursal:'LAB/NF',salarioDiario:500,cfdiNomina:4725.60,compeBase:2774.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:7,nombre:'GONZALEZ BLANCO PEDRO ANGEL',rs:'RGC',sucursal:'LAB/NF',salarioDiario:500,cfdiNomina:4725.60,compeBase:2774.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:8,nombre:'HUERTA PERALES XIOMARA BERENICE',rs:'RGC',sucursal:'PRESTTO',salarioDiario:857.20,cfdiNomina:4725.60,compeBase:8132.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:9,nombre:'IBARRA FRANCO LEONEL ANGEL',rs:'RGC',sucursal:'LAB/NF',salarioDiario:857.20,cfdiNomina:4725.60,compeBase:8132.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:10,nombre:'MARIN LUNA RIGOBERTO',rs:'RGC',sucursal:'LAB/NF',salarioDiario:1000,cfdiNomina:4725.60,compeBase:10274.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:11,nombre:'PUGA POSADA SILVIA PATRICIA',rs:'RGC',sucursal:'DM',salarioDiario:466.67,cfdiNomina:4725.60,compeBase:2274.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:12,nombre:'RODRIGUEZ CAMACHO LUISA FERNANDA',rs:'RGC',sucursal:'DM',salarioDiario:733.33,cfdiNomina:4725.60,compeBase:6274.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:13,nombre:'ROSALES DE LA ROSA LEIDY GUADALUPE',rs:'RGC',sucursal:'ROKMA',salarioDiario:766.67,cfdiNomina:4725.60,compeBase:6774.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:14,nombre:'QUIÑONES CARREON ANA KAREN',rs:'GF',sucursal:'ROKMA',salarioDiario:400,cfdiNomina:0,compeBase:4400,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:11,diasVacaciones:12},
+  {id:uuid(),numero:15,nombre:'JUAN SERRANO',rs:'N/A',sucursal:'LAB/NF',salarioDiario:666.67,cfdiNomina:0,compeBase:5274.40,sueldo:4725.60,rsSueldo:'GF',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:16,nombre:'PADILLA BARRIENTOS CRISTHIAN OSMAR',rs:'GF',sucursal:'PRESTTO',salarioDiario:571.47,cfdiNomina:4725.60,compeBase:3846.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:17,nombre:'AGUILAR GARCIA FRANCISCO ARIEL',rs:'GF',sucursal:'ROKMA',salarioDiario:666.67,cfdiNomina:4725.60,compeBase:5274.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:18,nombre:'HERRERA ARIZMENDI NEIRI MIREHLI',rs:'GF',sucursal:'LAB/NF',salarioDiario:583.36,cfdiNomina:3465.44,compeBase:2951.56,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:11,diasVacaciones:12},
+  {id:uuid(),numero:19,nombre:'MONTES SERRATO CONSUELO JANETH',rs:'N/A',sucursal:'DM',salarioDiario:350,cfdiNomina:0,compeBase:384.56,sueldo:3465.44,rsSueldo:'N/A',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:11,diasVacaciones:12},
+  {id:uuid(),numero:20,nombre:'LOPEZ CRUZ ANTONIO FEDERICO',rs:'N/A',sucursal:'LAB/NF',salarioDiario:660,cfdiNomina:0,compeBase:3794.56,sueldo:3465.44,rsSueldo:'N/A',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:11,diasVacaciones:12},
+  {id:uuid(),numero:21,nombre:'MAURICIO HUERTA PAULINA GUADALUPE',rs:'GF',sucursal:'ROKMA',salarioDiario:466.67,cfdiNomina:4725.60,compeBase:2274.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:22,nombre:'DAMARIS VILLEGAS',rs:'RGC',sucursal:'LAB/NF',salarioDiario:500,cfdiNomina:6613.05,compeBase:1314.95,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:23,nombre:'SOTO ARREDONDO KAREN ALEJANDRA',rs:'RGC',sucursal:'LAB/NF',salarioDiario:500,cfdiNomina:4849.57,compeBase:0,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:24,nombre:'RUIZ CAMPOS LIZETH GUADALUPE',rs:'GF',sucursal:'DM',salarioDiario:428.57,cfdiNomina:4725.60,compeBase:1274.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:25,nombre:'LUIS ANGEL SALAZAR HERNANDEZ',rs:'N/A',sucursal:'ROKMA',salarioDiario:400,cfdiNomina:0,compeBase:0,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+  {id:uuid(),numero:26,nombre:'ZARATE ALEJOS JUAN CARLOS',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:500,cfdiNomina:4725.60,compeBase:2774.40,sueldo:0,rsSueldo:'',activo:true,fechaAlta:'2024-01-01',fechaBaja:null,diasQna:15,diasVacaciones:12},
+];
+
+function initData(){
+  if(!LS.get(K.rs,null))LS.set(K.rs,SEED_RS);
+  if(!LS.get(K.tipos,null))LS.set(K.tipos,SEED_TIPOS);
+  if(!LS.get(K.emp,null))LS.set(K.emp,SEED_EMP);
+  if(!LS.get(K.inc,null))LS.set(K.inc,[]);
+  if(!LS.get(K.quin,null))LS.set(K.quin,[]);
+  if(!LS.get(K.prest,null))LS.set(K.prest,[]);
+  if(!LS.get(K.diasDeb,null))LS.set(K.diasDeb,[]);
+  if(!LS.get(K.vacSaldo,null))LS.set(K.vacSaldo,{});
+  // Ensure tipos have new fields
+  const tipos=LS.get(K.tipos,[]);
+  if(tipos.length&&tipos[0].afectaVac===undefined){
+    LS.set(K.tipos,SEED_TIPOS);
+  }
+}
+
+/* ── BASE COMPONENTS ── */
+function Modal({open,onClose,title,children,lg,xl}){
+  if(!open)return null;
+  return <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className={`modal ${lg?'modal-lg':''} ${xl?'modal-xl':''}`}>
+      <div className="modal-title"><span>{title}</span><button className="modal-close" onClick={onClose}>✕</button></div>
+      {children}
+    </div>
+  </div>;
+}
+function Confirm({open,msg,onYes,onNo}){
+  if(!open)return null;
+  return <div className="modal-overlay"><div className="modal" style={{maxWidth:380}}>
+    <div className="modal-title"><span>⚠️ Confirmar</span></div>
+    <p style={{marginBottom:18,color:'var(--muted)',fontSize:13}}>{msg}</p>
+    <div className="form-actions"><button className="btn btn-secondary" onClick={onNo}>Cancelar</button><button className="btn btn-danger" onClick={onYes}>Sí, confirmar</button></div>
+  </div></div>;
+}
+const RS_BADGE={MCFR:'badge-blue',RGC:'badge-purple',GF:'badge-green','N/A':'badge-gold'};
+function RsBadge({rs}){return <span className={`badge ${RS_BADGE[rs]||'badge-gray'}`}>{rs}</span>;}
+function SortTh({field,label,sf,sd,onSort,className=''}){
+  const active=sf===field;
+  return <th className={`sortable ${className}`} onClick={()=>onSort(field)}>
+    {label} <span style={{color:active?'var(--gold)':'var(--border)',marginLeft:3}}>{active?(sd==='asc'?'↑':'↓'):'↕'}</span>
+  </th>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════════════ */
+function Dashboard(){
+  const emps=LS.get(K.emp,[]);
+  const incs=LS.get(K.inc,[]);
+  const quins=LS.get(K.quin,[]);
+  const prest=LS.get(K.prest,[]);
+  const abierta=quins.find(q=>q.status==='abierta');
+  const mesActual=today().slice(0,7);
+  const faltasMes=incs.filter(i=>i.fecha.startsWith(mesActual));
+  const faltasDescuento=faltasMes.filter(i=>i.descuenta).length;
+  const faltasTotales=faltasMes.length;
+  const prestActivo=prest.filter(p=>p.activo).reduce((s,p)=>s+(p.saldoPendiente||0),0);
+  const realBase=emps.filter(e=>e.activo).reduce((s,e)=>s+e.cfdiNomina+e.compeBase+e.sueldo,0);
+  const cerradas=quins.filter(q=>q.status==='cerrada');
+  const ultimaQna=cerradas.sort((a,b)=>b.fin.localeCompare(a.fin))[0];
+  return <div>
+    <div className="kpi-grid">
+      <div className="kpi"><div className="kpi-label">Empleados Activos</div><div className="kpi-value text-green">{emps.filter(e=>e.activo).length}</div></div>
+      <div className="kpi"><div className="kpi-label">Nómina Base Quincenal</div><div className="kpi-value text-gold" style={{fontSize:15}}>{fmt(realBase)}</div><div className="kpi-sub">suma de activos</div></div>
+      <div className="kpi"><div className="kpi-label">Quincena Activa</div><div className="kpi-value" style={{fontSize:13}}>{abierta?`${fmtDate(abierta.inicio)} — ${fmtDate(abierta.fin)}`:'—'}</div><div className="kpi-sub">{abierta?'🟢 Abierta':'Sin quincena activa'}</div></div>
+      <div className="kpi"><div className="kpi-label">Incidencias este mes</div><div className="kpi-value">{faltasTotales}</div><div className="kpi-sub text-red">{faltasDescuento} con descuento</div></div>
+      <div className="kpi"><div className="kpi-label">Préstamos Pendientes</div><div className="kpi-value" style={{fontSize:15}}>{fmt(prestActivo)}</div></div>
+      <div className="kpi"><div className="kpi-label">Quincenas Cerradas</div><div className="kpi-value">{cerradas.length}</div>{ultimaQna&&<div className="kpi-sub">Última: {fmtDate(ultimaQna.fin)}</div>}</div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+      <div className="card">
+        <div className="section-title mb-3">👥 Por Sucursal</div>
+        {['LAB/NF','ROKMA','PRESTTO','DM'].map(s=>{
+          const cnt=emps.filter(e=>e.activo&&e.sucursal===s).length;
+          const tot=emps.filter(e=>e.activo).length;
+          const pct=tot?Math.round(cnt/tot*100):0;
+          return <div key={s} style={{marginBottom:11}}>
+            <div className="flex items-center" style={{justifyContent:'space-between',marginBottom:3}}>
+              <span style={{fontSize:12}}>{s}</span><span style={{fontSize:11,color:'var(--muted)'}}>{cnt} ({pct}%)</span>
+            </div>
+            <div className="dias-bar"><div className="dias-fill" style={{width:`${pct}%`,background:'var(--gold)'}}/></div>
+          </div>;
+        })}
+      </div>
+      <div className="card">
+        <div className="section-title mb-3">📋 Últimas Incidencias</div>
+        {incs.slice(0,7).map(i=><div key={i.id} className="flex items-center" style={{justifyContent:'space-between',marginBottom:9}}>
+          <div><div style={{fontSize:12,fontWeight:500}}>{i.empleadoNombre.split(' ').slice(0,2).join(' ')}</div><div style={{fontSize:10.5,color:'var(--muted)'}}>{i.tipo} · {fmtDate(i.fecha)}</div></div>
+          {i.descuenta?<span className="badge badge-red">Descuenta</span>:<span className="badge badge-gray">Info</span>}
+        </div>)}
+        {!incs.length&&<p className="text-muted" style={{fontSize:12}}>Sin incidencias</p>}
+      </div>
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   NÓMINA — QUINCENA
+══════════════════════════════════════════════════════════ */
+function calcFaltas(empId,inicio,fin,incs){
+  return incs.filter(i=>i.empleadoId===empId&&i.descuenta===true&&i.fecha>=inicio&&i.fecha<=fin).length;
+}
+function buildRow(emp,inicio,fin,incs,prest,extraCols){
+  const faltas=calcFaltas(emp.id,inicio,fin,incs);
+  const compe=Math.max(0,emp.compeBase-(faltas*emp.salarioDiario));
+  const realQuincenal=emp.cfdiNomina+emp.compeBase+emp.sueldo;
+  const cuotasPrest=prest.filter(p=>p.empleadoId===emp.id&&p.activo&&p.saldoPendiente>0&&p.tipo==='PRÉSTAMO').reduce((s,p)=>s+(p.cuotaQuincenal||0),0);
+  const cuotasAdel=prest.filter(p=>p.empleadoId===emp.id&&p.activo&&p.saldoPendiente>0&&p.tipo==='ADELANTO').reduce((s,p)=>s+(p.cuotaQuincenal||0),0);
+  const extra=extraCols?extraCols.reduce((s,c)=>({...s,[c.id]:0}),{}):{};
+  const total=(emp.cfdiNomina+compe+emp.sueldo)-cuotasPrest-cuotasAdel;
+  const efectivoExtra=compe+emp.sueldo;
+  return {empId:emp.id,numero:emp.numero,nombre:emp.nombre,rs:emp.rs,rsSueldo:emp.rsSueldo,sucursal:emp.sucursal,salarioDiario:emp.salarioDiario,diasTrabajados:emp.diasQna||15,faltas,cfdiNomina:emp.cfdiNomina,compeBase:emp.compeBase,compe,sueldo:emp.sueldo,prestamos:cuotasPrest,adelantos:cuotasAdel,realQuincenal,totalAPagar:total,pagado:false,facturado:false,extraCols:extra,incluyeEfectivo:true,efectivoExtra};
+}
+function recalcRow(row,extraCols){
+  const compe=Math.max(0,row.compeBase-(row.faltas*row.salarioDiario));
+  const realQuincenal=row.cfdiNomina+row.compeBase+row.sueldo;
+  let sumaExtra=0,restaExtra=0;
+  (extraCols||[]).forEach(c=>{const v=row.extraCols?.[c.id]||0;if(c.efecto==='suma')sumaExtra+=v;else if(c.efecto==='resta')restaExtra+=v;});
+  const totalAPagar=(row.cfdiNomina+compe+row.sueldo)+sumaExtra-restaExtra-row.prestamos-row.adelantos;
+  let efectivoExtra=0;
+  if(row.incluyeEfectivo!==false){
+    efectivoExtra=compe+row.sueldo;
+    (extraCols||[]).forEach(c=>{if(c.afectaEfectivo)efectivoExtra+=(row.extraCols?.[c.id]||0);});
+  }
+  return {...row,compe,realQuincenal,totalAPagar,efectivoExtra};
+}
+
+// PDF de comprobante — estilo Grupo Rokma
+function generarPDF(row,inicio,fin,rsOpts,extraCols){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'letter'});
+  const W=216,M=20;
+  doc.setFillColor(255,255,255);doc.rect(0,0,W,279,'F');
+
+  // Banda gris superior
+  doc.setFillColor(220,220,220);doc.rect(18,17,W-32,14,'F');
+  drawRokmaBrandBox(doc,{x:12,y:5,w:26,h:44,logoSize:17,textScale:1.14,bgColor:[30,30,30],fgColor:[255,255,255]});
+  // Título COMPENSACIÓN
+  doc.setFont('helvetica','bold');doc.setFontSize(31);doc.setTextColor(24,24,24);
+  doc.text('COMPENSACIÓN',122,28,{align:'center'});
+
+  // Fecha
+  const dateCapitalized=fmtFechaPago(new Date());
+  doc.setFontSize(10.5);doc.setFont('helvetica','normal');doc.setTextColor(50,50,50);
+  const labelFecha='Fecha: de pago ';
+  doc.text(labelFecha,110,43);
+  const lw=doc.getStringUnitWidth(labelFecha)*10.5/doc.internal.scaleFactor;
+  doc.setFont('helvetica','bold');doc.text(dateCapitalized,110+lw,43);
+
+  // Sección INFORMACIÓN DEL TRABAJADOR
+  doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(30,30,30);
+  doc.text('INFORMACIÓN DEL TRABAJADOR',M,62);
+  doc.setDrawColor(180,180,180);doc.setLineWidth(0.4);doc.line(M,65,W-M,65);
+
+  doc.setFontSize(10.5);
+  doc.setFont('helvetica','bold');doc.setTextColor(40,40,40);
+  doc.text('Nombre:',M,74);doc.setFont('helvetica','normal');doc.text(row.nombre,M+21,74);
+  doc.setFont('helvetica','bold');doc.text('No de empleado:',130,74);doc.setFont('helvetica','normal');doc.text(String(row.numero),168,74);
+  doc.setFont('helvetica','bold');doc.text('Sucursal:',M,82);doc.setFont('helvetica','normal');doc.text(row.sucursal,M+21,82);
+  doc.setFont('helvetica','bold');doc.text('Faltas Totales:',M,90);doc.setFont('helvetica','normal');doc.text(String(row.faltas),M+34,90);
+  doc.setFont('helvetica','bold');doc.text('Faltas a Descontar:',130,90);doc.setFont('helvetica','normal');doc.text(String(row.faltas),171,90);
+
+  // Tabla de conceptos
+  const body=[];
+  body.push(['COMPENSACIÓN',fmt(row.compeBase),'1',fmt(row.compeBase)]);
+  if(row.faltas>0){
+    const fDesc=row.faltas*row.salarioDiario;
+    body.push(['FALTAS',`-${fmt(row.salarioDiario)}`,String(row.faltas),`-${fmt(fDesc)}`]);
+  }
+  if(row.cfdiNomina>0)body.push(['CFDI NÓMINA',fmt(row.cfdiNomina),'1',fmt(row.cfdiNomina)]);
+  if(row.sueldo>0)body.push([`SUELDO S/T (${row.rsSueldo||'N/A'})`,fmt(row.sueldo),'1',fmt(row.sueldo)]);
+  (extraCols||[]).forEach(c=>{
+    const v=row.extraCols?.[c.id]||0;
+    if(v!==0){const isR=c.efecto==='resta';body.push([c.nombre,isR?`-${fmt(v)}`:fmt(v),'1',isR?`-${fmt(v)}`:fmt(v)]);}
+  });
+  if(row.prestamos>0)body.push(['PRÉSTAMO(S)',`-${fmt(row.prestamos)}`,'1',`-${fmt(row.prestamos)}`]);
+  if(row.adelantos>0)body.push(['ADELANTO(S)',`-${fmt(row.adelantos)}`,'1',`-${fmt(row.adelantos)}`]);
+
+  doc.autoTable({
+    startY:97,
+    head:[['DESCRIPCIÓN','SUBTOTAL','CANTIDAD','TOTAL']],
+    body,
+    foot:[['','','TOTAL',fmt(row.totalAPagar)]],
+    theme:'grid',
+    headStyles:{fillColor:[30,30,30],textColor:[255,255,255],fontStyle:'bold',fontSize:10,halign:'center'},
+    footStyles:{fillColor:[215,215,215],textColor:[30,30,30],fontStyle:'bold',fontSize:11},
+    bodyStyles:{fontSize:10,textColor:[40,40,40]},
+    columnStyles:{0:{cellWidth:80},1:{halign:'right',cellWidth:42},2:{halign:'center',cellWidth:26},3:{halign:'right',cellWidth:32}},
+    margin:{left:M,right:M},
+    didParseCell:(d)=>{
+      if(d.section==='body'){
+        const desc=d.row.raw[0];
+        if(desc==='FALTAS'||desc==='PRÉSTAMO(S)'||desc==='ADELANTO(S)'){
+          if(d.column.index===1||d.column.index===3)d.cell.styles.textColor=[200,30,30];
+        }
+      }
+      if(d.section==='foot'&&d.column.index===3)d.cell.styles.halign='right';
+    }
+  });
+
+  const finalY=doc.lastAutoTable.finalY+10;
+  // Importe en letra (minúsculas, cursiva)
+  const letraRaw=numLetra(row.totalAPagar);
+  const letraFmt=letraRaw.charAt(0)+letraRaw.slice(1).toLowerCase().replace('mxn','M.N.');
+  doc.setFont('helvetica','italic');doc.setFontSize(10);doc.setTextColor(60,60,60);
+  doc.text(letraFmt,M,finalY,{maxWidth:W-M*2});
+
+  // Firmas
+  const sigY=Math.min(finalY+50,245);
+  doc.setDrawColor(80,80,80);doc.setLineWidth(0.4);
+  doc.line(M,sigY,M+75,sigY);
+  doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(30,30,30);
+  doc.text('MARY CARMEN FLORES RIVERA',M,sigY+5);
+  doc.setFont('helvetica','italic');doc.setFontSize(8.5);doc.setTextColor(80,80,80);
+  doc.text('DIRECTORA ADMINISTRATIVA',M,sigY+10);
+  doc.setDrawColor(80,80,80);doc.setLineWidth(0.4);
+  doc.line(W-M-75,sigY,W-M,sigY);
+  doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(30,30,30);
+  doc.text(row.nombre,W-M-75,sigY+5);
+  doc.setFont('helvetica','italic');doc.setFontSize(8.5);doc.setTextColor(80,80,80);
+  doc.text('COLABORADOR',W-M-75,sigY+10);
+
+  doc.save(`COMPE_${row.nombre.split(' ')[0]}_${row.nombre.split(' ')[1]}_${inicio}.pdf`);
+}
+
+// Gestor de columnas extra
+function ColManager({cols,setCols,onClose}){
+  const blank={id:uuid(),nombre:'',efecto:'suma',afectaEfectivo:false};
+  const [f,setF]=useState(blank);
+  const add=()=>{if(!f.nombre)return;setCols(p=>[...p,{...f}]);setF({...blank,id:uuid()});};
+  const del=(id)=>setCols(p=>p.filter(c=>c.id!==id));
+  const toggleEfecto=(id)=>setCols(p=>p.map(c=>c.id===id?{...c,efecto:c.efecto==='suma'?'resta':c.efecto==='resta'?'neutro':'suma'}:c));
+  const toggleEfectivo=(id)=>setCols(p=>p.map(c=>c.id===id?{...c,afectaEfectivo:!c.afectaEfectivo}:c));
+  const EFECTO_BADGE={suma:'badge-green',resta:'badge-red',neutro:'badge-gray'};
+  const EFECTO_LABEL={suma:'+ Suma al total',resta:'− Resta del total',neutro:'sin efecto'};
+  return <div>
+    <p className="text-muted mb-3" style={{fontSize:12}}>Las columnas extra aparecen en la tabla de nómina. Haz clic en el efecto para cambiarlo. Activa 💵 para incluirla en Efectivo Extra.</p>
+    {cols.map(c=><div key={c.id} className="flex items-center gap-2 mb-2" style={{background:'var(--panel2)',padding:'8px 12px',borderRadius:7}}>
+      <span style={{flex:1,fontSize:12.5,fontWeight:500}}>{c.nombre}</span>
+      <span className={`badge ${EFECTO_BADGE[c.efecto]}`} style={{cursor:'pointer'}} onClick={()=>toggleEfecto(c.id)}>{EFECTO_LABEL[c.efecto]}</span>
+      <span className={`badge ${c.afectaEfectivo?'badge-cyan':'badge-gray'}`} style={{cursor:'pointer'}} onClick={()=>toggleEfectivo(c.id)} title="¿Suma a Efectivo Extra?">{c.afectaEfectivo?'💵 Efectivo':'💵 —'}</span>
+      <button className="btn btn-danger btn-sm" onClick={()=>del(c.id)}>✕</button>
+    </div>)}
+    <div className="flex gap-2 mt-3" style={{flexWrap:'wrap'}}>
+      <input placeholder="Nombre columna (ej: PV/TIMB)" value={f.nombre} onChange={e=>setF(p=>({...p,nombre:e.target.value.toUpperCase()}))} style={{flex:1,minWidth:160}} />
+      <select value={f.efecto} onChange={e=>setF(p=>({...p,efecto:e.target.value}))} style={{width:140}}>
+        <option value="suma">+ Suma</option><option value="resta">− Resta</option><option value="neutro">Sin efecto</option>
+      </select>
+      <label className="check-row" style={{fontSize:12,whiteSpace:'nowrap'}}><input type="checkbox" checked={f.afectaEfectivo} onChange={e=>setF(p=>({...p,afectaEfectivo:e.target.checked}))}/>💵 Efectivo</label>
+      <button className="btn btn-primary" onClick={add}>+ Agregar</button>
+    </div>
+    <div className="form-actions"><button className="btn btn-green" onClick={onClose}>✓ Listo</button></div>
+  </div>;
+}
+
+function NominaTable({rows,setRows,extraCols}){
+  const upd=(idx,k,v)=>setRows(prev=>{
+    const c=[...prev];const r={...c[idx],[k]:isNaN(+v)?v:+v};
+    c[idx]=recalcRow(r,extraCols);return c;
+  });
+  const updExtra=(idx,colId,v)=>setRows(prev=>{
+    const c=[...prev];const r={...c[idx],extraCols:{...c[idx].extraCols,[colId]:isNaN(+v)?0:+v}};
+    c[idx]=recalcRow(r,extraCols);return c;
+  });
+  const toggleEfectivo=(idx,checked)=>setRows(prev=>{
+    const c=[...prev];const r={...c[idx],incluyeEfectivo:checked};
+    c[idx]=recalcRow(r,extraCols);return c;
+  });
+  const tot={cfdi:0,compe:0,sueldo:0,prest:0,adel:0,real:0,total:0,faltas:0,efectivo:0,extra:{}};
+  rows.forEach(r=>{tot.cfdi+=r.cfdiNomina;tot.compe+=r.compe;tot.sueldo+=r.sueldo;tot.prest+=r.prestamos;tot.adel+=r.adelantos;tot.real+=r.realQuincenal;tot.total+=r.totalAPagar;tot.faltas+=r.faltas;if(r.incluyeEfectivo!==false)tot.efectivo+=(r.efectivoExtra||0);});
+  (extraCols||[]).forEach(c=>{tot.extra[c.id]=rows.reduce((s,r)=>s+(r.extraCols?.[c.id]||0),0);});
+  const ni=(idx,k)=>e=>upd(idx,k,e.target.value);
+  const SI=(val,idx,k)=><input type="number" step="0.01" value={val} onChange={ni(idx,k)}/>;
+  return <div className="nomina-wrap"><table className="nomina-table">
+    <thead><tr>
+      <th>#</th><th>RS</th><th>Nombre</th><th>Suc.</th><th>Días</th><th>Faltas</th>
+      <th>CFDI Nómina</th><th>Compe</th><th>Sueldo S/T</th>
+      {(extraCols||[]).map(c=><th key={c.id} className={c.efecto==='suma'?'col-suma':c.efecto==='resta'?'col-resta':''}>{c.nombre}</th>)}
+      <th className="col-efec" title="Compe + Sueldo S/T + columnas marcadas como Efectivo. Desactiva por empleado con el checkbox.">💵 Efectivo Extra</th>
+      <th className="col-resta">Préstamos</th><th className="col-resta">Adelantos</th>
+      <th className="col-real">Real Quincenal</th>
+      <th className="col-total">Total a Percibir</th>
+      <th>Pagado</th><th>Facturado</th>
+    </tr></thead>
+    <tbody>
+      {rows.map((r,i)=><tr key={r.empId}>
+        <td style={{color:'var(--muted)',fontSize:10.5}}>{r.numero}</td>
+        <td><RsBadge rs={r.rs}/></td>
+        <td style={{fontWeight:500,minWidth:200}}>{r.nombre}</td>
+        <td><span className="badge badge-gray">{r.sucursal}</span></td>
+        <td>{SI(r.diasTrabajados,i,'diasTrabajados')}</td>
+        <td style={{textAlign:'center'}}><span className={r.faltas>0?'badge badge-red':'badge badge-gray'}>{r.faltas}</span></td>
+        <td>{fmt(r.cfdiNomina)}</td>
+        <td style={{fontWeight:500}}>{fmt(r.compe)}</td>
+        <td>{r.sueldo?<span className="text-gold">{fmt(r.sueldo)}</span>:<span className="text-muted">—</span>}</td>
+        {(extraCols||[]).map(c=><td key={c.id} className={c.efecto==='suma'?'col-suma':c.efecto==='resta'?'col-resta':''}>
+          <input type="number" step="0.01" value={r.extraCols?.[c.id]||0} onChange={e=>updExtra(i,c.id,e.target.value)}/>
+        </td>)}
+        <td className="col-efec">
+          <label style={{display:'flex',alignItems:'center',gap:5,cursor:'pointer'}}>
+            <input type="checkbox" checked={r.incluyeEfectivo!==false} onChange={e=>toggleEfectivo(i,e.target.checked)}/>
+            {r.incluyeEfectivo!==false?fmt(r.efectivoExtra||0):<span className="text-muted" style={{fontWeight:400}}>—</span>}
+          </label>
+        </td>
+        <td className="col-resta">{SI(r.prestamos,i,'prestamos')}</td>
+        <td className="col-resta">{SI(r.adelantos,i,'adelantos')}</td>
+        <td className="col-real">{fmt(r.realQuincenal)}</td>
+        <td className="col-total">{fmt(r.totalAPagar)}</td>
+        <td><input type="checkbox" checked={r.pagado} onChange={e=>upd(i,'pagado',e.target.checked)}/></td>
+        <td><input type="checkbox" checked={r.facturado} onChange={e=>upd(i,'facturado',e.target.checked)}/></td>
+      </tr>)}
+    </tbody>
+    <tfoot><tr className="tr-total">
+      <td colSpan={6}>{rows.length} empleados — {tot.faltas} faltas</td>
+      <td>{fmt(tot.cfdi)}</td><td>{fmt(tot.compe)}</td><td>{fmt(tot.sueldo)}</td>
+      {(extraCols||[]).map(c=><td key={c.id}>{fmt(tot.extra[c.id]||0)}</td>)}
+      <td className="col-efec">{fmt(tot.efectivo)}</td>
+      <td>{fmt(tot.prest)}</td><td>{fmt(tot.adel)}</td>
+      <td>{fmt(tot.real)}</td><td>{fmt(tot.total)}</td><td colSpan={2}/>
+    </tr></tfoot>
+  </table></div>;
+}
+
+function Nomina(){
+  const [emps]=useState(()=>LS.get(K.emp,[]));
+  const [incs]=useState(()=>LS.get(K.inc,[]));
+  const [prest,setPrest]=useState(()=>LS.get(K.prest,[]));
+  const [quins,setQuins]=useState(()=>LS.get(K.quin,[]));
+  const [rs]=useState(()=>LS.get(K.rs,SEED_RS));
+  const abierta=useMemo(()=>quins.find(q=>q.status==='abierta'),[quins]);
+  const [inicio,setInicio]=useState('2026-04-16');
+  const [fin,setFin]=useState('2026-04-30');
+  const [rows,setRows]=useState([]);
+  const [extraCols,setExtraCols]=useState([]);
+  const [modalNew,setModalNew]=useState(false);
+  const [modalCols,setModalCols]=useState(false);
+  const [confirmCerrar,setConfirmCerrar]=useState(false);
+  const [saved,setSaved]=useState(false);
+
+  useEffect(()=>{
+    if(abierta){
+      setInicio(abierta.inicio);setFin(abierta.fin);
+      setExtraCols(abierta.extraCols||[]);
+      if(abierta.rows)setRows(abierta.rows);
+      else setRows(emps.filter(e=>e.activo).sort((a,b)=>a.numero-b.numero).map(e=>buildRow(e,abierta.inicio,abierta.fin,incs,prest,abierta.extraCols||[])));
+    }
+  },[abierta]);
+
+  const recalcTodo=()=>{
+    if(!abierta)return;
+    const freshIncs=LS.get(K.inc,[]);
+    const freshPrest=LS.get(K.prest,[]);
+    setPrest(freshPrest);
+    setRows(prev=>prev.map(r=>{
+      const faltas=calcFaltas(r.empId,abierta.inicio,abierta.fin,freshIncs);
+      const cuotasPrest=freshPrest.filter(p=>p.empleadoId===r.empId&&p.activo&&p.saldoPendiente>0&&p.tipo==='PRÉSTAMO').reduce((s,p)=>s+(p.cuotaQuincenal||0),0);
+      const cuotasAdel=freshPrest.filter(p=>p.empleadoId===r.empId&&p.activo&&p.saldoPendiente>0&&p.tipo==='ADELANTO').reduce((s,p)=>s+(p.cuotaQuincenal||0),0);
+      return recalcRow({...r,faltas,prestamos:cuotasPrest,adelantos:cuotasAdel},extraCols);
+    }));
+  };
+
+  const autoSave=()=>{
+    if(!abierta)return;
+    const up=quins.map(q=>q.id===abierta.id?{...q,rows,extraCols}:q);
+    setQuins(up);LS.set(K.quin,up);setSaved(true);setTimeout(()=>setSaved(false),2000);
+  };
+
+  const crearQna=()=>{
+    const nueva={id:uuid(),inicio,fin,status:'abierta',rows:null,extraCols:[],fechaCreacion:today()};
+    const up=[...quins,nueva];setQuins(up);LS.set(K.quin,up);setModalNew(false);
+    setExtraCols([]);
+    setRows(emps.filter(e=>e.activo).sort((a,b)=>a.numero-b.numero).map(e=>buildRow(e,inicio,fin,incs,prest,[])));
+  };
+
+  const cerrarQna=()=>{
+    // Aplicar exactamente lo capturado en la quincena, distribuyéndolo
+    // sobre los saldos activos del empleado, del más antiguo al más nuevo.
+    let prestUp=[...prest];
+    rows.forEach(r=>{
+      if(r.prestamos>0||r.adelantos>0){
+        const restantes={'PRÉSTAMO':Number(r.prestamos)||0,'ADELANTO':Number(r.adelantos)||0};
+        ['PRÉSTAMO','ADELANTO'].forEach(tipo=>{
+          let restante=restantes[tipo]||0;
+          if(restante<=0)return;
+          const ordenados=[...prestUp].map((p,idx)=>({...p,__idx:idx})).filter(p=>p.empleadoId===r.empId&&p.tipo===tipo&&p.activo&&p.saldoPendiente>0).sort((a,b)=>String(a.fechaOtorgado||'').localeCompare(String(b.fechaOtorgado||''))||a.__idx-b.__idx);
+          ordenados.forEach(p=>{
+            if(restante<=0)return;
+            const abono=Math.min(restante,p.saldoPendiente);
+            restante=Number((restante-abono).toFixed(2));
+            prestUp=prestUp.map(x=>x.id===p.id?{...x,saldoPendiente:Number((x.saldoPendiente-abono).toFixed(2)),activo:Number((x.saldoPendiente-abono).toFixed(2))>0}:x);
+          });
+        });
+      }
+    });
+    LS.set(K.prest,prestUp);setPrest(prestUp);
+    const up=quins.map(q=>q.id===abierta.id?{...q,status:'cerrada',rows,extraCols,fechaCierre:today()}:q);
+    setQuins(up);LS.set(K.quin,up);setConfirmCerrar(false);
+  };
+
+  if(!abierta)return <div style={{textAlign:'center',paddingTop:80}}>
+    <div style={{fontSize:48,marginBottom:14}}>📋</div>
+    <p className="text-muted mb-4">No hay quincena abierta.</p>
+    <button className="btn btn-primary" onClick={()=>setModalNew(true)}>+ Crear Quincena</button>
+    <Modal open={modalNew} onClose={()=>setModalNew(false)} title="Nueva Quincena">
+      <div className="form-row">
+        <div className="form-group"><label>Inicio</label><input type="date" value={inicio} onChange={e=>setInicio(e.target.value)}/></div>
+        <div className="form-group"><label>Fin</label><input type="date" value={fin} onChange={e=>setFin(e.target.value)}/></div>
+      </div>
+      <div className="form-actions"><button className="btn btn-secondary" onClick={()=>setModalNew(false)}>Cancelar</button><button className="btn btn-primary" onClick={crearQna}>✓ Crear</button></div>
+    </Modal>
+  </div>;
+
+  const tots={real:rows.reduce((s,r)=>s+r.realQuincenal,0),total:rows.reduce((s,r)=>s+r.totalAPagar,0),cfdi:rows.reduce((s,r)=>s+r.cfdiNomina,0)};
+
+  return <div>
+    <div className="kpi-grid">
+      <div className="kpi"><div className="kpi-label">Período</div><div className="kpi-value" style={{fontSize:12.5}}>{fmtDate(abierta.inicio)} — {fmtDate(abierta.fin)}</div><div className="kpi-sub text-green">🟢 Abierta</div></div>
+      <div className="kpi"><div className="kpi-label">Real Quincenal</div><div className="kpi-value text-blue" style={{fontSize:15}}>{fmt(tots.real)}</div></div>
+      <div className="kpi"><div className="kpi-label">Total a Percibir</div><div className="kpi-value text-gold" style={{fontSize:15}}>{fmt(tots.total)}</div></div>
+      <div className="kpi"><div className="kpi-label">CFDI Total</div><div className="kpi-value" style={{fontSize:15}}>{fmt(tots.cfdi)}</div></div>
+      <div className="kpi"><div className="kpi-label">Empleados</div><div className="kpi-value">{rows.length}</div></div>
+    </div>
+    <div className="section-header">
+      <div className="flex gap-2 items-center flex-wrap">
+        <button className="btn btn-secondary" onClick={()=>setModalCols(true)}>⚙️ Columnas Extra</button>
+        <span className="text-muted" style={{fontSize:11}}>Columnas activas: {extraCols.length}</span>
+      </div>
+      <div className="flex gap-2">
+        {saved&&<span className="text-green" style={{fontSize:12,alignSelf:'center'}}>✓ Guardado</span>}
+        <button className="btn btn-blue" onClick={recalcTodo}>🔄 Recalcular Todo</button>
+        <button className="btn btn-secondary" onClick={autoSave}>💾 Guardar</button>
+        <button className="btn btn-danger" onClick={()=>setConfirmCerrar(true)}>🔒 Cerrar Quincena</button>
+      </div>
+    </div>
+    <NominaTable rows={rows} setRows={setRows} extraCols={extraCols}/>
+    <div style={{marginTop:18}}>
+      <div className="section-title mb-2">📄 Generar Comprobantes PDF</div>
+      <div className="flex flex-wrap gap-1">
+        {rows.map(r=><button key={r.empId} className="btn btn-secondary btn-sm" onClick={()=>generarPDF(r,abierta.inicio,abierta.fin,rs,extraCols)}>
+          📄 {r.nombre.split(' ').slice(0,2).join(' ')}
+        </button>)}
+      </div>
+    </div>
+    <Modal open={modalCols} onClose={()=>{setModalCols(false);}} title="⚙️ Gestionar Columnas Extra" lg>
+      <ColManager cols={extraCols} setCols={c=>{setExtraCols(c);setRows(prev=>prev.map(r=>{const ne=c.reduce((s,col)=>({...s,[col.id]:r.extraCols?.[col.id]||0}),{});return recalcRow({...r,extraCols:ne},c);}));}} onClose={()=>setModalCols(false)}/>
+    </Modal>
+    <Confirm open={confirmCerrar} msg={`¿Cerrar quincena ${fmtDate(abierta.inicio)} — ${fmtDate(abierta.fin)}? Se guardará el snapshot y se actualizarán los préstamos.`} onYes={cerrarQna} onNo={()=>setConfirmCerrar(false)}/>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   EMPLEADOS
+══════════════════════════════════════════════════════════ */
+function EmpForm({emp,onSave,onSaveVac,onClose,rsOpts}){
+  const blank={numero:1,nombre:'',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:0,cfdiNomina:0,compeBase:0,sueldo:0,rsSueldo:'',activo:true,fechaAlta:today(),fechaBaja:null,diasQna:15,diasVacaciones:12};
+  const [f,setF]=useState(emp||blank);
+  const [tab,setTab]=useState('general');
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const suc=['LAB/NF','ROKMA','PRESTTO','DM'];
+  return <div>
+    <div className="tabs">
+      <button className={`tab ${tab==='general'?'active':''}`} onClick={()=>setTab('general')}>Datos Generales</button>
+      <button className={`tab ${tab==='vac'?'active':''}`} onClick={()=>setTab('vac')}>Vacaciones y Días</button>
+    </div>
+    {tab==='general'&&<form onSubmit={e=>{e.preventDefault();onSave(f);}}>
+      <div className="form-row">
+        <div className="form-group"><label>Número</label><input type="number" value={f.numero} onChange={e=>set('numero',+e.target.value)} required/></div>
+        <div className="form-group"><label>RS (Compensación)</label><select value={f.rs} onChange={e=>set('rs',e.target.value)}>{rsOpts.map(r=><option key={r.clave} value={r.clave}>{r.clave}</option>)}</select></div>
+      </div>
+      <div className="form-row c1"><div className="form-group"><label>Nombre completo</label><input value={f.nombre} onChange={e=>set('nombre',e.target.value.toUpperCase())} required/></div></div>
+      <div className="form-row">
+        <div className="form-group"><label>Sucursal</label><select value={f.sucursal} onChange={e=>set('sucursal',e.target.value)}>{suc.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div className="form-group"><label>Salario Diario</label><input type="number" step="0.01" value={f.salarioDiario} onChange={e=>set('salarioDiario',+e.target.value)}/></div>
+      </div>
+      <div className="form-row c3">
+        <div className="form-group"><label>CFDI Nómina</label><input type="number" step="0.01" value={f.cfdiNomina} onChange={e=>set('cfdiNomina',+e.target.value)}/></div>
+        <div className="form-group"><label>Compe Base</label><input type="number" step="0.01" value={f.compeBase} onChange={e=>set('compeBase',+e.target.value)}/></div>
+        <div className="form-group"><label>Sueldo S/T</label><input type="number" step="0.01" value={f.sueldo} onChange={e=>set('sueldo',+e.target.value)}/></div>
+      </div>
+      <div className="form-row">
+        <div className="form-group"><label>RS Sueldo</label><select value={f.rsSueldo} onChange={e=>set('rsSueldo',e.target.value)}><option value="">— No aplica —</option>{rsOpts.map(r=><option key={r.clave} value={r.clave}>{r.clave}</option>)}</select></div>
+        <div className="form-group"><label>Fecha Alta</label><input type="date" value={f.fechaAlta} onChange={e=>set('fechaAlta',e.target.value)}/></div>
+      </div>
+      <div className="form-actions"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="btn btn-primary">💾 Guardar</button></div>
+    </form>}
+    {tab==='vac'&&<div>
+      <div className="form-row">
+        <div className="form-group"><label>Días trabajados por quincena (default)</label><input type="number" value={f.diasQna} onChange={e=>set('diasQna',+e.target.value)}/><span style={{fontSize:10.5,color:'var(--muted)',marginTop:3}}>Se jala automáticamente al abrir quincena</span></div>
+        <div className="form-group"><label>Días de vacaciones por año</label><input type="number" value={f.diasVacaciones} onChange={e=>set('diasVacaciones',+e.target.value)}/></div>
+      </div>
+      <div className="card" style={{background:'var(--panel2)',marginBottom:14}}>
+        <p style={{fontSize:12,color:'var(--muted)'}}>⚠️ Al guardar las vacaciones, el saldo disponible del empleado se restaurará al número de días indicado. Esto <strong>solo ocurre</strong> al presionar "Guardar Vacaciones".</p>
+      </div>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-secondary" onClick={()=>onSave(f)}>💾 Guardar Todo</button>
+        <button className="btn btn-primary" onClick={()=>onSaveVac(f)}>🏖️ Guardar Vacaciones</button>
+      </div>
+    </div>}
+  </div>;
+}
+
+function Empleados(){
+  const [emps,setEmps]=useState(()=>LS.get(K.emp,[]));
+  const [rs]=useState(()=>LS.get(K.rs,SEED_RS));
+  const [modal,setModal]=useState(null);
+  const [sel,setSel]=useState(null);
+  const [confirm,setConfirm]=useState(null);
+  const [search,setSearch]=useState('');
+  const [showInact,setShowInact]=useState(false);
+  const [sf,setSf]=useState('numero');
+  const [sd,setSd]=useState('asc');
+  const onSort=(f)=>{setSf(f);setSd(p=>sf===f?(p==='asc'?'desc':'asc'):'asc');};
+
+  const filtered=useMemo(()=>{
+    let r=emps.filter(e=>showInact?true:e.activo).filter(e=>e.nombre.toLowerCase().includes(search.toLowerCase())||e.sucursal.toLowerCase().includes(search.toLowerCase()));
+    r.sort((a,b)=>{const va=a[sf],vb=b[sf],m=sd==='asc'?1:-1;return typeof va==='number'?(va-vb)*m:String(va||'').localeCompare(String(vb||''))*m;});
+    return r;
+  },[emps,search,showInact,sf,sd]);
+
+  const handleSave=(f)=>{
+    const up=sel?emps.map(e=>e.id===sel.id?{...f,id:sel.id}:e):[...emps,{...f,id:uuid()}];
+    setEmps(up);LS.set(K.emp,up);setModal(null);setSel(null);
+  };
+  const handleSaveVac=(f)=>{
+    const up=emps.map(e=>e.id===sel.id?{...f,id:sel.id}:e);
+    setEmps(up);LS.set(K.emp,up);
+    // Reset vacation saldo
+    const vs=LS.get(K.vacSaldo,{});
+    vs[sel.id]=f.diasVacaciones;LS.set(K.vacSaldo,vs);
+    setModal(null);setSel(null);
+  };
+  const handleBaja=(e)=>{const up=emps.map(x=>x.id===e.id?{...x,activo:false,fechaBaja:today()}:x);setEmps(up);LS.set(K.emp,up);setConfirm(null);};
+  const handleReactivar=(e)=>{const up=emps.map(x=>x.id===e.id?{...x,activo:true,fechaBaja:null}:x);setEmps(up);LS.set(K.emp,up);};
+
+  const exportExcel=()=>{
+    const data=filtered.map(e=>({'N°':e.numero,'Nombre':e.nombre,'RS':e.rs,'Sucursal':e.sucursal,'Sal. Diario':e.salarioDiario,'CFDI Nómina':e.cfdiNomina,'Compe Base':e.compeBase,'Sueldo S/T':e.sueldo,'Real Quincenal':e.cfdiNomina+e.compeBase+e.sueldo,'Días Qna':e.diasQna,'Días Vac/Año':e.diasVacaciones,'Estado':e.activo?'Activo':'Baja','Fecha Alta':e.fechaAlta,'Fecha Baja':e.fechaBaja||''}));
+    const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Empleados');XLSX.writeFile(wb,'Empleados_GF.xlsx');
+  };
+
+  const nxtNum=useMemo(()=>Math.max(0,...emps.map(e=>e.numero))+1,[emps]);
+  const SP={campo:(s)=>({className:`sortable`,onClick:()=>onSort(s)})};
+
+  return <div>
+    <div className="kpi-grid">
+      <div className="kpi"><div className="kpi-label">Activos</div><div className="kpi-value text-green">{emps.filter(e=>e.activo).length}</div></div>
+      <div className="kpi"><div className="kpi-label">Inactivos</div><div className="kpi-value text-muted">{emps.filter(e=>!e.activo).length}</div></div>
+      <div className="kpi"><div className="kpi-label">Nómina Base Total</div><div className="kpi-value text-gold" style={{fontSize:14}}>{fmt(emps.filter(e=>e.activo).reduce((s,e)=>s+e.cfdiNomina+e.compeBase+e.sueldo,0))}</div></div>
+    </div>
+    <div className="section-header">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="search-bar"><span className="search-icon">🔍</span><input placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <label className="check-row text-muted" style={{fontSize:12}}><input type="checkbox" checked={showInact} onChange={e=>setShowInact(e.target.checked)}/>Ver inactivos</label>
+      </div>
+      <div className="flex gap-2">
+        <button className="btn btn-secondary" onClick={exportExcel}>📊 Excel</button>
+        <button className="btn btn-primary" onClick={()=>{setSel(null);setModal('form');}}>+ Nuevo</button>
+      </div>
+    </div>
+    <div className="table-wrap"><table>
+      <thead><tr>
+        <SortTh field="numero" label="#" sf={sf} sd={sd} onSort={onSort}/>
+        <SortTh field="rs" label="RS" sf={sf} sd={sd} onSort={onSort}/>
+        <SortTh field="nombre" label="Nombre" sf={sf} sd={sd} onSort={onSort}/>
+        <SortTh field="sucursal" label="Sucursal" sf={sf} sd={sd} onSort={onSort}/>
+        <SortTh field="salarioDiario" label="Sal. Diario" sf={sf} sd={sd} onSort={onSort}/>
+        <SortTh field="cfdiNomina" label="CFDI" sf={sf} sd={sd} onSort={onSort}/>
+        <SortTh field="compeBase" label="Compe" sf={sf} sd={sd} onSort={onSort}/>
+        <th>Sueldo S/T</th><th>Real Qna.</th><th>Días Qna</th><th>Vac/Año</th><th>Estado</th><th>Acciones</th>
+      </tr></thead>
+      <tbody>{filtered.map(e=>{
+        const real=e.cfdiNomina+e.compeBase+e.sueldo;
+        return <tr key={e.id} style={e.activo?{}:{opacity:.5}}>
+          <td className="text-muted" style={{fontSize:10.5}}>{e.numero}</td>
+          <td><RsBadge rs={e.rs}/></td>
+          <td style={{fontWeight:500}}>{e.nombre}</td>
+          <td><span className="badge badge-gray">{e.sucursal}</span></td>
+          <td>{fmt(e.salarioDiario)}</td><td>{fmt(e.cfdiNomina)}</td><td>{fmt(e.compeBase)}</td>
+          <td>{e.sueldo?<span className="text-gold">{fmt(e.sueldo)}</span>:<span className="text-muted">—</span>}</td>
+          <td style={{fontWeight:600}}>{fmt(real)}</td>
+          <td style={{textAlign:'center'}}>{e.diasQna||15}</td>
+          <td style={{textAlign:'center'}}>{e.diasVacaciones||12}</td>
+          <td>{e.activo?<span className="badge badge-green">Activo</span>:<span className="badge badge-red">Baja</span>}</td>
+          <td><div className="flex gap-1">
+            <button className="btn btn-secondary btn-sm" onClick={()=>{setSel(e);setModal('form');}}>✏️</button>
+            {e.activo?<button className="btn btn-danger btn-sm" onClick={()=>setConfirm(e)}>Baja</button>:<button className="btn btn-green btn-sm" onClick={()=>handleReactivar(e)}>Activar</button>}
+          </div></td>
+        </tr>;
+      })}</tbody>
+    </table></div>
+    <Modal open={modal==='form'} onClose={()=>{setModal(null);setSel(null);}} title={sel?'Editar Empleado':'Nuevo Empleado'} lg>
+      <EmpForm emp={sel?{...sel}:{numero:nxtNum,nombre:'',rs:'MCFR',sucursal:'LAB/NF',salarioDiario:0,cfdiNomina:0,compeBase:0,sueldo:0,rsSueldo:'',activo:true,fechaAlta:today(),fechaBaja:null,diasQna:15,diasVacaciones:12}} onSave={handleSave} onSaveVac={handleSaveVac} onClose={()=>{setModal(null);setSel(null);}} rsOpts={rs}/>
+    </Modal>
+    <Confirm open={!!confirm} msg={`¿Dar de baja a ${confirm?.nombre}?`} onYes={()=>handleBaja(confirm)} onNo={()=>setConfirm(null)}/>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   INCIDENCIAS
+══════════════════════════════════════════════════════════ */
+function Incidencias(){
+  const [incs,setIncs]=useState(()=>LS.get(K.inc,[]));
+  const [tipos,setTipos]=useState(()=>LS.get(K.tipos,SEED_TIPOS));
+  const [emps]=useState(()=>LS.get(K.emp,[]));
+  const [tab,setTab]=useState('reg');
+  const [modal,setModal]=useState(null);
+  const [editInc,setEditInc]=useState(null);
+  const [search,setSearch]=useState('');
+  const [filterMes,setFilterMes]=useState('');
+  const blank={empleadoId:'',tipo:'',fecha:today(),motivo:'',horaSalida:'',horaRegreso:'',horaLlegada:''};
+  const [f,setF]=useState(blank);
+  const fileRef=useRef(null);
+  const fld=(k,v)=>setF(p=>({...p,[k]:v}));
+  const syncDiasDeb=up=>recalcDiasDebFromIncidencias(up,tipos);
+  const normalizeDateValue=v=>{
+    if(v===null||v===undefined||v==='')return '';
+    if(typeof v==='number'){
+      const d=XLSX.SSF.parse_date_code(v);
+      if(!d)return '';
+      return `${String(d.y).padStart(4,'0')}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    }
+    const raw=String(v).trim();
+    if(!raw)return '';
+    if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw;
+    const dt=new Date(raw);
+    if(Number.isNaN(dt.getTime()))return '';
+    return new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  };
+  const normalizeTimeValue=v=>{
+    const raw=String(v||'').trim();
+    if(!raw)return '';
+    if(/^\d{2}:\d{2}$/.test(raw))return raw;
+    if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(raw)){
+      const parts=raw.split(':');
+      return `${String(parts[0]).padStart(2,'0')}:${parts[1]}`;
+    }
+    return '';
+  };
+  const exportTemplate=()=>{
+    const ejemploEmp=emps.find(e=>e.activo)||emps[0];
+    const ejemploTipo=tipos[0]?.nombre||'FALTA';
+    const wsTpl=XLSX.utils.json_to_sheet([{
+      empleadoNumero:ejemploEmp?.numero||1,
+      empleadoNombre:ejemploEmp?.nombre||'NOMBRE COMPLETO',
+      tipo:ejemploTipo,
+      fecha:today(),
+      motivo:'MOTIVO OPCIONAL',
+      horaSalida:'',
+      horaRegreso:'',
+      horaLlegada:''
+    }]);
+    const wsInfo=XLSX.utils.json_to_sheet(emps.filter(e=>e.activo).sort((a,b)=>a.numero-b.numero).map(e=>({
+      empleadoNumero:e.numero,
+      empleadoNombre:e.nombre,
+      sucursal:e.sucursal
+    })));
+    const wsTipos=XLSX.utils.json_to_sheet(tipos.map(t=>({
+      tipo:t.nombre,
+      descuenta:t.descuenta?'SI':'NO',
+      afectaVacaciones:t.afectaVac?'SI':'NO',
+      afectaDiasDebidos:t.afectaDias?'SI':'NO'
+    })));
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,wsTpl,'Plantilla');
+    XLSX.utils.book_append_sheet(wb,wsInfo,'Empleados');
+    XLSX.utils.book_append_sheet(wb,wsTipos,'Tipos');
+    XLSX.writeFile(wb,'Plantilla_Importacion_Incidencias.xlsx');
+  };
+  const exportExcel=()=>{
+    const data=filtered.map(i=>{
+      const emp=emps.find(e=>e.id===i.empleadoId)||{};
+      return {
+        'Fecha':i.fecha,
+        'Empleado N°':emp.numero||'',
+        'Empleado':i.empleadoNombre,
+        'Sucursal':emp.sucursal||'',
+        'Tipo':i.tipo,
+        'Descuenta':i.descuenta?'Sí':'No',
+        'Motivo':i.motivo||'',
+        'Hora Salida':i.horaSalida||'',
+        'Hora Regreso':i.horaRegreso||'',
+        'Hora Llegada':i.horaLlegada||''
+      };
+    });
+    const ws=XLSX.utils.json_to_sheet(data);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Incidencias');
+    XLSX.writeFile(wb,`Incidencias_${filterMes||today()}.xlsx`);
+  };
+  const exportPDFIncidencia=inc=>{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'letter'});
+    const emp=emps.find(e=>e.id===inc.empleadoId)||{};
+    const W=216,M=18;
+    addReportHeader(doc,'ACUSE DE INCIDENCIA',{
+      accent:[222,238,248],
+      textColor:[20,78,120],
+      titleSize:21,
+      bandY:13,
+      bandH:13,
+      bandX:20,
+      bandW:W-30,
+      box:{x:10,y:4,w:26,h:44,logoSize:15,textScale:1.12,bgColor:[25,88,168],fgColor:[255,255,255]}
+    });
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(60,60,60);
+    doc.text('Fecha de emisión:',110,45);
+    doc.setFont('helvetica','bold');doc.text(fmtFechaPago(new Date()),145,45);
+
+    doc.setFillColor(240,248,253);doc.roundedRect(M,52,W-M*2,30,3,3,'F');
+    doc.setDrawColor(175,212,234);doc.roundedRect(M,52,W-M*2,30,3,3,'S');
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(20,78,120);
+    doc.text('DATOS DEL COLABORADOR',M+4,60);
+    doc.setFont('helvetica','normal');doc.setFontSize(10);
+    doc.setTextColor(40,40,40);
+    doc.text(`Nombre: ${inc.empleadoNombre||'—'}`,M+4,68);
+    doc.text(`Sucursal: ${emp.sucursal||'—'}`,M+4,75);
+    doc.text(`No. de empleado: ${emp.numero||'—'}`,118,68);
+    doc.text(`Fecha de incidencia: ${fmtDate(inc.fecha)}`,118,75);
+
+    const body=[
+      ['Tipo de incidencia',inc.tipo||'—']
+    ];
+    if(inc.motivo)body.push(['Motivo / descripción',inc.motivo]);
+    if(inc.horaSalida)body.push(['Hora salida',inc.horaSalida]);
+    if(inc.horaRegreso)body.push(['Hora regreso',inc.horaRegreso]);
+    if(inc.horaLlegada)body.push(['Hora llegada',inc.horaLlegada]);
+    if(inc.descuenta)body.push(['Descuenta compensación','Sí']);
+    doc.autoTable({
+      startY:88,
+      head:[['Concepto','Detalle']],
+      body,
+      theme:'grid',
+      headStyles:{fillColor:[46,126,177],textColor:[255,255,255],fontStyle:'bold',fontSize:10},
+      bodyStyles:{fontSize:10,textColor:[40,40,40]},
+      columnStyles:{0:{cellWidth:54,fontStyle:'bold'},1:{cellWidth:126}},
+      margin:{left:M,right:M}
+    });
+
+    let y=doc.lastAutoTable.finalY+12;
+    doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(50,50,50);
+    const texto=`Por medio del presente, el colaborador queda enterado de la incidencia registrada en el sistema de Recursos Humanos de Grupo Rokma, correspondiente a la fecha y detalle señalados en este documento.`;
+    doc.text(texto,M,y,{maxWidth:W-M*2,align:'justify'});
+    y+=28;
+    doc.text('Firma de enterado:',M,y);
+    y+=18;
+    doc.setDrawColor(90,90,90);doc.setLineWidth(0.35);
+    doc.line(M,y,M+76,y);
+    doc.line(W-M-76,y,W-M,y);
+    doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(30,30,30);
+    doc.text('MARY CARMEN FLORES RIVERA',M,y+5);
+    doc.text(inc.empleadoNombre||'COLABORADOR',W-M-76,y+5);
+    doc.setFont('helvetica','italic');doc.setFontSize(8.5);doc.setTextColor(90,90,90);
+    doc.text('DIRECTORA ADMINISTRATIVA',M,y+10);
+    doc.text('COLABORADOR',W-M-76,y+10);
+
+    const safeName=normTxt(inc.empleadoNombre||'INCIDENCIA').replace(/[^A-Z0-9 ]/g,'').trim().replace(/\s+/g,'_');
+    doc.save(`Incidencia_${safeName||'COLABORADOR'}_${inc.fecha||today()}.pdf`);
+  };
+  const importIncidencias=async e=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    try{
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const errores=[];
+      let vacSaldoActual=LS.get(K.vacSaldo,{});
+      const nuevos=[];
+      rows.forEach((row,idx)=>{
+        const numero=Number(row.empleadoNumero||row.numero||row['empleado_numero']||0);
+        const nombre=normTxt(row.empleadoNombre||row.nombre||row.empleado||'');
+        const tipoNombre=normTxt(row.tipo||'');
+        const fecha=normalizeDateValue(row.fecha||row.Fecha||row.FECHA);
+        const emp=numero?emps.find(x=>x.numero===numero):emps.find(x=>normTxt(x.nombre)===nombre);
+        const tipo=findTipo(tipos,tipoNombre);
+        if(!emp){errores.push(`Fila ${idx+2}: empleado no encontrado.`);return;}
+        if(!tipo){errores.push(`Fila ${idx+2}: tipo inválido.`);return;}
+        if(!fecha){errores.push(`Fila ${idx+2}: fecha inválida.`);return;}
+        let data={
+          id:uuid(),
+          empleadoId:emp.id,
+          empleadoNombre:emp.nombre,
+          tipo:tipo.nombre,
+          fecha,
+          motivo:normTxt(row.motivo||''),
+          horaSalida:normalizeTimeValue(row.horaSalida),
+          horaRegreso:normalizeTimeValue(row.horaRegreso),
+          horaLlegada:normalizeTimeValue(row.horaLlegada),
+          descuenta:tipo.descuenta
+        };
+        if(tipo.afectaVac){
+          const cur=Number(vacSaldoActual[emp.id]??emp.diasVacaciones??0);
+          const vacApplied=cur>0;
+          if(vacApplied)vacSaldoActual={...vacSaldoActual,[emp.id]:cur-1};
+          data={...data,_fx:{vacApplied}};
+        }
+        nuevos.push(data);
+      });
+      if(errores.length){
+        window.alert(`Se encontraron errores:\n\n${errores.slice(0,10).join('\n')}${errores.length>10?`\n... y ${errores.length-10} más`:''}`);
+        return;
+      }
+      if(!nuevos.length){
+        window.alert('No se encontraron incidencias válidas para importar.');
+        return;
+      }
+      LS.set(K.vacSaldo,vacSaldoActual);
+      const up=[...nuevos,...incs];
+      setIncs(up);LS.set(K.inc,up);
+      syncDiasDeb(up);
+      window.alert(`Se importaron ${nuevos.length} incidencia(s) correctamente.`);
+    }catch(err){
+      window.alert(`No se pudo importar el archivo.\n${err?.message||err}`);
+    }finally{
+      e.target.value='';
+    }
+  };
+
+  const saveInc=()=>{
+    const emp=emps.find(e=>e.id===f.empleadoId);
+    const tipo=tipos.find(t=>t.nombre===f.tipo);
+    if(!emp||!tipo||!f.fecha)return;
+    if(editInc)revertVacIncidenceEffect(editInc,tipos,emps);
+    let data={...f,id:editInc?editInc.id:uuid(),empleadoNombre:emp.nombre,descuenta:tipo.descuenta};
+    data=applyVacIncidenceEffect(data,tipos,emps).inc;
+    const up=editInc?incs.map(i=>i.id===editInc.id?data:i):[data,...incs];
+    setIncs(up);LS.set(K.inc,up);setF(blank);setEditInc(null);setModal(null);
+    syncDiasDeb(up);
+  };
+
+  const delInc=(id)=>{
+    const target=incs.find(i=>i.id===id);
+    if(target)revertVacIncidenceEffect(target,tipos,emps);
+    const up=incs.filter(i=>i.id!==id);
+    setIncs(up);LS.set(K.inc,up);
+    syncDiasDeb(up);
+  };
+  const openEdit=(i)=>{setEditInc(i);setF({empleadoId:i.empleadoId,tipo:i.tipo,fecha:i.fecha,motivo:i.motivo,horaSalida:i.horaSalida||'',horaRegreso:i.horaRegreso||'',horaLlegada:i.horaLlegada||''});setModal('form');};
+
+  const [tipoF,setTipoF]=useState({nombre:'',descuenta:false,color:'#3b82f6',afectaVac:false,afectaDias:false});
+  const saveTipo=()=>{if(!tipoF.nombre)return;const up=[...tipos,{...tipoF,id:uuid()}];setTipos(up);LS.set(K.tipos,up);setTipoF({nombre:'',descuenta:false,color:'#3b82f6',afectaVac:false,afectaDias:false});};
+  const delTipo=(id)=>{const up=tipos.filter(t=>t.id!==id);setTipos(up);LS.set(K.tipos,up);};
+  const toggleDesc=(id)=>{const up=tipos.map(t=>t.id===id?{...t,descuenta:!t.descuenta}:t);setTipos(up);LS.set(K.tipos,up);};
+
+  const filtered=useMemo(()=>incs.filter(i=>!search||i.empleadoNombre.toLowerCase().includes(search.toLowerCase())||i.tipo.toLowerCase().includes(search.toLowerCase())).filter(i=>!filterMes||i.fecha.startsWith(filterMes)).sort((a,b)=>b.fecha.localeCompare(a.fecha)),[incs,search,filterMes]);
+
+  return <div>
+    <div className="tabs">
+      <button className={`tab ${tab==='reg'?'active':''}`} onClick={()=>setTab('reg')}>📋 Registro</button>
+      <button className={`tab ${tab==='tipos'?'active':''}`} onClick={()=>setTab('tipos')}>⚙️ Tipos</button>
+    </div>
+    {tab==='reg'&&<>
+      <div className="section-header">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="search-bar"><span className="search-icon">🔍</span><input placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+          <input type="month" value={filterMes} onChange={e=>setFilterMes(e.target.value)} style={{background:'var(--panel2)',border:'1px solid var(--border)',borderRadius:6,padding:'6px 10px',color:'var(--text)',fontSize:12.5}}/>
+        </div>
+        <div className="flex gap-2">
+          <button className="btn btn-secondary" onClick={exportExcel}>📊 Excel</button>
+          <button className="btn btn-secondary" onClick={exportTemplate}>📄 Plantilla</button>
+          <button className="btn btn-secondary" onClick={()=>fileRef.current?.click()}>📥 Importar</button>
+          <button className="btn btn-primary" onClick={()=>{setEditInc(null);setF(blank);setModal('form');}}>+ Registrar</button>
+          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{display:'none'}} onChange={importIncidencias}/>
+        </div>
+      </div>
+      <div className="table-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Empleado</th><th>Tipo</th><th>Descuenta</th><th>Motivo</th><th>Horas</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {!filtered.length&&<tr><td colSpan={7} style={{textAlign:'center',color:'var(--muted)',padding:32}}>Sin registros</td></tr>}
+          {filtered.map(i=>{const t=tipos.find(x=>x.nombre===i.tipo);return <tr key={i.id}>
+            <td>{fmtDate(i.fecha)}</td>
+            <td style={{fontWeight:500}}>{i.empleadoNombre}</td>
+            <td><span className="badge" style={{background:`${t?.color||'#666'}22`,color:t?.color||'#aaa'}}>{i.tipo}</span></td>
+            <td>{i.descuenta?<span className="badge badge-red">Sí</span>:<span className="badge badge-gray">No</span>}</td>
+            <td className="text-muted" style={{maxWidth:200,overflow:'hidden',textOverflow:'ellipsis'}}>{i.motivo}</td>
+            <td style={{fontSize:10.5,color:'var(--muted)'}}>{[i.horaSalida&&`Sal:${i.horaSalida}`,i.horaRegreso&&`Reg:${i.horaRegreso}`,i.horaLlegada&&`Lle:${i.horaLlegada}`].filter(Boolean).join(' ')}</td>
+            <td><div className="flex gap-1"><button className="btn btn-secondary btn-sm" onClick={()=>exportPDFIncidencia(i)}>📄</button><button className="btn btn-secondary btn-sm" onClick={()=>openEdit(i)}>✏️</button><button className="btn btn-danger btn-sm" onClick={()=>delInc(i.id)}>✕</button></div></td>
+          </tr>;})}
+        </tbody>
+      </table></div>
+    </>}
+    {tab==='tipos'&&<div>
+      <div className="card mb-4">
+        <div className="section-title mb-3">➕ Nuevo Tipo</div>
+        <div className="form-row c3">
+          <div className="form-group"><label>Nombre</label><input value={tipoF.nombre} onChange={e=>setTipoF(p=>({...p,nombre:e.target.value.toUpperCase()}))}/></div>
+          <div className="form-group"><label>Color</label><input type="color" value={tipoF.color} onChange={e=>setTipoF(p=>({...p,color:e.target.value}))}/></div>
+          <div className="form-group"><label>Efectos</label>
+            <div style={{display:'flex',flexDirection:'column',gap:4,marginTop:2}}>
+              <label className="check-row" style={{fontSize:11}}><input type="checkbox" checked={tipoF.descuenta} onChange={e=>setTipoF(p=>({...p,descuenta:e.target.checked}))}/>Descuenta compe</label>
+              <label className="check-row" style={{fontSize:11}}><input type="checkbox" checked={tipoF.afectaVac} onChange={e=>setTipoF(p=>({...p,afectaVac:e.target.checked}))}/>Usa día de vacaciones</label>
+              <label className="check-row" style={{fontSize:11}}><input type="checkbox" checked={tipoF.afectaDias} onChange={e=>setTipoF(p=>({...p,afectaDias:e.target.checked}))}/>Usa día debido</label>
+            </div>
+          </div>
+        </div>
+        <button className="btn btn-primary" onClick={saveTipo}>+ Agregar Tipo</button>
+      </div>
+      <div className="table-wrap"><table>
+        <thead><tr><th>Nombre</th><th>Color</th><th>Descuenta</th><th>Afecta Vac.</th><th>Afecta Días Deb.</th><th>Usos</th><th></th></tr></thead>
+        <tbody>{tipos.map(t=><tr key={t.id}>
+          <td><span className="badge" style={{background:`${t.color}22`,color:t.color}}>{t.nombre}</span></td>
+          <td><div style={{width:22,height:22,borderRadius:4,background:t.color}}/></td>
+          <td><label className="check-row"><input type="checkbox" checked={t.descuenta} onChange={()=>toggleDesc(t.id)}/><span style={{fontSize:11,color:t.descuenta?'var(--red)':'var(--muted)'}}>{t.descuenta?'Sí':'No'}</span></label></td>
+          <td><span className={`badge ${t.afectaVac?'badge-green':'badge-gray'}`}>{t.afectaVac?'Sí':'No'}</span></td>
+          <td><span className={`badge ${t.afectaDias?'badge-orange':'badge-gray'}`}>{t.afectaDias?'Sí':'No'}</span></td>
+          <td className="text-muted">{incs.filter(i=>i.tipo===t.nombre).length}</td>
+          <td><button className="btn btn-danger btn-sm" onClick={()=>delTipo(t.id)}>✕</button></td>
+        </tr>)}</tbody>
+      </table></div>
+    </div>}
+    <Modal open={modal==='form'} onClose={()=>{setModal(null);setEditInc(null);setF(blank);}} title={editInc?'Editar Incidencia':'Nueva Incidencia'}>
+      <div className="form-row">
+        <div className="form-group"><label>Empleado</label><select value={f.empleadoId} onChange={e=>fld('empleadoId',e.target.value)}><option value="">— Seleccionar —</option>{emps.filter(e=>e.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div>
+        <div className="form-group"><label>Tipo</label><select value={f.tipo} onChange={e=>fld('tipo',e.target.value)}><option value="">— Seleccionar —</option>{tipos.map(t=><option key={t.id} value={t.nombre}>{t.nombre}</option>)}</select></div>
+      </div>
+      <div className="form-row"><div className="form-group"><label>Fecha</label><input type="date" value={f.fecha} onChange={e=>fld('fecha',e.target.value)}/></div><div className="form-group"><label>Motivo</label><input value={f.motivo} onChange={e=>fld('motivo',e.target.value.toUpperCase())}/></div></div>
+      <div className="form-row c3">
+        <div className="form-group"><label>Hora Salida</label><input type="time" value={f.horaSalida} onChange={e=>fld('horaSalida',e.target.value)}/></div>
+        <div className="form-group"><label>Hora Regreso</label><input type="time" value={f.horaRegreso} onChange={e=>fld('horaRegreso',e.target.value)}/></div>
+        <div className="form-group"><label>Hora Llegada</label><input type="time" value={f.horaLlegada} onChange={e=>fld('horaLlegada',e.target.value)}/></div>
+      </div>
+      <div className="form-actions"><button className="btn btn-secondary" onClick={()=>{setModal(null);setEditInc(null);setF(blank);}}>Cancelar</button><button className="btn btn-primary" onClick={saveInc}>💾 Guardar</button></div>
+    </Modal>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PRÉSTAMOS Y ADELANTOS
+══════════════════════════════════════════════════════════ */
+function Prestamos(){
+  const [emps]=useState(()=>LS.get(K.emp,[]));
+  const [prest,setPrest]=useState(()=>LS.get(K.prest,[]));
+  const [modal,setModal]=useState(false);
+  const [filterTipo,setFilterTipo]=useState('TODOS');
+  const blank={empleadoId:'',tipo:'PRÉSTAMO',monto:0,cuotaQuincenal:0,fechaOtorgado:today(),motivo:''};
+  const [f,setF]=useState(blank);
+  const fld=(k,v)=>setF(p=>({...p,[k]:v}));
+
+  const save=()=>{
+    const emp=emps.find(e=>e.id===f.empleadoId);
+    if(!emp||!f.monto)return;
+    const nuevo={...f,id:uuid(),empleadoNombre:emp.nombre,monto:+f.monto,cuotaQuincenal:+f.cuotaQuincenal,saldoPendiente:+f.monto,activo:true};
+    const up=[nuevo,...prest];setPrest(up);LS.set(K.prest,up);setF(blank);setModal(false);
+  };
+  const toggle=(id)=>{const up=prest.map(p=>p.id===id?{...p,activo:!p.activo}:p);setPrest(up);LS.set(K.prest,up);};
+  const del=(id)=>{const up=prest.filter(p=>p.id!==id);setPrest(up);LS.set(K.prest,up);};
+
+  const filtered=prest.filter(p=>filterTipo==='TODOS'||p.tipo===filterTipo).sort((a,b)=>b.fechaOtorgado.localeCompare(a.fechaOtorgado));
+  const totActivo=prest.filter(p=>p.activo).reduce((s,p)=>s+p.saldoPendiente,0);
+
+  return <div>
+    <div className="kpi-grid">
+      <div className="kpi"><div className="kpi-label">Préstamos Activos</div><div className="kpi-value text-red">{prest.filter(p=>p.activo&&p.tipo==='PRÉSTAMO').length}</div></div>
+      <div className="kpi"><div className="kpi-label">Adelantos Activos</div><div className="kpi-value text-orange">{prest.filter(p=>p.activo&&p.tipo==='ADELANTO').length}</div></div>
+      <div className="kpi"><div className="kpi-label">Saldo Pendiente Total</div><div className="kpi-value" style={{fontSize:15}}>{fmt(totActivo)}</div></div>
+    </div>
+    <div className="section-header">
+      <div className="flex gap-2">
+        {['TODOS','PRÉSTAMO','ADELANTO'].map(t=><button key={t} className={`btn btn-sm ${filterTipo===t?'btn-primary':'btn-secondary'}`} onClick={()=>setFilterTipo(t)}>{t}</button>)}
+      </div>
+      <button className="btn btn-primary" onClick={()=>setModal(true)}>+ Nuevo</button>
+    </div>
+    <div className="table-wrap"><table>
+      <thead><tr><th>Tipo</th><th>Empleado</th><th>Monto Original</th><th>Saldo Pendiente</th><th>Cuota Qna.</th><th>Fecha</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {!filtered.length&&<tr><td colSpan={9} style={{textAlign:'center',color:'var(--muted)',padding:32}}>Sin registros</td></tr>}
+        {filtered.map(p=><tr key={p.id} style={p.activo?{}:{opacity:.5}}>
+          <td><span className={`badge ${p.tipo==='PRÉSTAMO'?'badge-red':'badge-orange'}`}>{p.tipo}</span></td>
+          <td style={{fontWeight:500}}>{p.empleadoNombre}</td>
+          <td>{fmt(p.monto)}</td>
+          <td style={{fontWeight:600,color:p.saldoPendiente>0?'var(--red)':'var(--green)'}}>{fmt(p.saldoPendiente)}</td>
+          <td>{fmt(p.cuotaQuincenal)}</td>
+          <td className="text-muted">{fmtDate(p.fechaOtorgado)}</td>
+          <td className="text-muted" style={{fontSize:11,maxWidth:150,overflow:'hidden',textOverflow:'ellipsis'}}>{p.motivo}</td>
+          <td>{p.activo?<span className="badge badge-red">Activo</span>:<span className="badge badge-green">Liquidado</span>}</td>
+          <td><div className="flex gap-1"><button className="btn btn-secondary btn-sm" onClick={()=>toggle(p.id)}>{p.activo?'Liquidar':'Reactivar'}</button><button className="btn btn-danger btn-sm" onClick={()=>del(p.id)}>✕</button></div></td>
+        </tr>)}
+      </tbody>
+    </table></div>
+    <Modal open={modal} onClose={()=>setModal(false)} title="Nuevo Préstamo / Adelanto">
+      <div className="form-row c1"><div className="form-group"><label>Tipo</label><div className="flex gap-2">{['PRÉSTAMO','ADELANTO'].map(t=><button key={t} type="button" className={`btn btn-sm ${f.tipo===t?'btn-primary':'btn-secondary'}`} onClick={()=>fld('tipo',t)}>{t}</button>)}</div></div></div>
+      <div className="form-row c1"><div className="form-group"><label>Empleado</label><select value={f.empleadoId} onChange={e=>fld('empleadoId',e.target.value)}><option value="">— Seleccionar —</option>{emps.filter(e=>e.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div></div>
+      <div className="form-row">
+        <div className="form-group"><label>Monto</label><input type="number" step="0.01" value={f.monto} onChange={e=>fld('monto',e.target.value)}/></div>
+        <div className="form-group"><label>Cuota Quincenal a Descontar</label><input type="number" step="0.01" value={f.cuotaQuincenal} onChange={e=>fld('cuotaQuincenal',e.target.value)}/><span style={{fontSize:10.5,color:'var(--muted)',marginTop:2}}>Se restará automáticamente al cerrar cada quincena</span></div>
+      </div>
+      <div className="form-row">
+        <div className="form-group"><label>Fecha Otorgado</label><input type="date" value={f.fechaOtorgado} onChange={e=>fld('fechaOtorgado',e.target.value)}/></div>
+        <div className="form-group"><label>Motivo</label><input value={f.motivo} onChange={e=>fld('motivo',e.target.value.toUpperCase())}/></div>
+      </div>
+      <div className="form-actions"><button className="btn btn-secondary" onClick={()=>setModal(false)}>Cancelar</button><button className="btn btn-primary" onClick={save}>💾 Guardar</button></div>
+    </Modal>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HISTORIAL
+══════════════════════════════════════════════════════════ */
+function Historial(){
+  const [quins,setQuins]=useState(()=>LS.get(K.quin,[]));
+  const [sel,setSel]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const cerradas=useMemo(()=>quins.filter(q=>q.status==='cerrada').sort((a,b)=>b.fin.localeCompare(a.fin)),[quins]);
+  const delQna=q=>{
+    const up=quins.filter(x=>x.id!==q.id);
+    setQuins(up);LS.set(K.quin,up);
+    if(sel?.id===q.id)setSel(null);
+    setConfirmDel(null);
+  };
+
+  const exportXLSX=(q)=>{
+    const rows=q.rows||[];
+    const data=rows.map(r=>({'N°':r.numero,'Nombre':r.nombre,'RS':r.rs,'Sucursal':r.sucursal,'Días':r.diasTrabajados,'Faltas':r.faltas,'CFDI Nómina':r.cfdiNomina,'Compensación':r.compe,'Sueldo S/T':r.sueldo,'Préstamos':r.prestamos,'Adelantos':r.adelantos,'Real Quincenal':r.realQuincenal,'Total a Percibir':r.totalAPagar,'Pagado':r.pagado?'Sí':'No','Facturado':r.facturado?'Sí':'No'}));
+    const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,`Qna ${q.inicio}`);XLSX.writeFile(wb,`Nomina_${q.inicio}_${q.fin}.xlsx`);
+  };
+
+  const exportPDF=(q)=>{
+    const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'letter'});
+    addReportHeader(doc,'REPORTE DE NÓMINA');
+    const rows=q.rows||[];
+    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
+    doc.text(`Período: ${fmtDate(q.inicio)} al ${fmtDate(q.fin)}  |  Cerrada: ${fmtDate(q.fechaCierre)}`,108,REPORT_HEADER_CONTENT_Y-5,{align:'center'});
+    const body=rows.map(r=>[r.numero,r.nombre,r.rs,r.sucursal,r.diasTrabajados,r.faltas,fmt(r.cfdiNomina),fmt(r.compe),fmt(r.sueldo),fmt(r.prestamos),fmt(r.adelantos),fmt(r.totalAPagar)]);
+    const tot=rows.reduce((s,r)=>({...s,cfdi:s.cfdi+r.cfdiNomina,compe:s.compe+r.compe,prest:s.prest+r.prestamos,total:s.total+r.totalAPagar}),{cfdi:0,compe:0,prest:0,total:0});
+    body.push(['','TOTALES','','','','',fmt(tot.cfdi),fmt(tot.compe),'',fmt(tot.prest),'',fmt(tot.total)]);
+    doc.autoTable({startY:REPORT_HEADER_CONTENT_Y,head:[['#','Nombre','RS','Suc.','Días','Faltas','CFDI','Compe','Sueldo','Prest.','Adel.','Total']],body,theme:'grid',headStyles:{fillColor:[30,30,30],textColor:[255,255,255],fontStyle:'bold',fontSize:8},bodyStyles:{fontSize:7.5},didParseCell:d=>{if(d.section==='body'&&d.row.index===body.length-1){d.cell.styles.fontStyle='bold';d.cell.styles.fillColor=[245,245,245];}},margin:{left:12,right:12}});
+    doc.save(`Nomina_${q.inicio}_${q.fin}.pdf`);
+  };
+
+  if(sel){
+    const tots={real:(sel.rows||[]).reduce((s,r)=>s+r.realQuincenal,0),total:(sel.rows||[]).reduce((s,r)=>s+r.totalAPagar,0),cfdi:(sel.rows||[]).reduce((s,r)=>s+r.cfdiNomina,0)};
+    return <div>
+      <div className="section-header">
+        <h3>Quincena: {fmtDate(sel.inicio)} — {fmtDate(sel.fin)}</h3>
+        <div className="flex gap-2">
+          <button className="btn btn-secondary" onClick={()=>exportXLSX(sel)}>📊 Excel</button>
+          <button className="btn btn-secondary" onClick={()=>exportPDF(sel)}>📄 PDF</button>
+          <button className="btn btn-danger" onClick={()=>setConfirmDel(sel)}>🗑️ Eliminar</button>
+          <button className="btn btn-secondary" onClick={()=>setSel(null)}>← Volver</button>
+        </div>
+      </div>
+      <div className="kpi-grid">
+        <div className="kpi"><div className="kpi-label">Real Quincenal</div><div className="kpi-value text-blue" style={{fontSize:15}}>{fmt(tots.real)}</div></div>
+        <div className="kpi"><div className="kpi-label">Total a Percibir</div><div className="kpi-value text-gold" style={{fontSize:15}}>{fmt(tots.total)}</div></div>
+        <div className="kpi"><div className="kpi-label">CFDI</div><div className="kpi-value" style={{fontSize:15}}>{fmt(tots.cfdi)}</div></div>
+        <div className="kpi"><div className="kpi-label">Empleados</div><div className="kpi-value">{(sel.rows||[]).length}</div></div>
+      </div>
+      <div className="table-wrap"><table>
+        <thead><tr><th>#</th><th>RS</th><th>Nombre</th><th>Suc.</th><th>Días</th><th>Faltas</th><th>CFDI</th><th>Compe</th><th>Sueldo</th><th>Prest.</th><th>Adel.</th><th>Real Qna.</th><th>Total Percibir</th><th>Pagado</th></tr></thead>
+        <tbody>{(sel.rows||[]).map(r=><tr key={r.empId}>
+          <td className="text-muted" style={{fontSize:10.5}}>{r.numero}</td><td><RsBadge rs={r.rs}/></td><td style={{fontWeight:500}}>{r.nombre}</td><td><span className="badge badge-gray">{r.sucursal}</span></td>
+          <td>{r.diasTrabajados}</td><td style={{textAlign:'center'}}><span className={r.faltas>0?'badge badge-red':'badge badge-gray'}>{r.faltas}</span></td>
+          <td>{fmt(r.cfdiNomina)}</td><td>{fmt(r.compe)}</td><td>{r.sueldo?fmt(r.sueldo):'—'}</td>
+          <td>{r.prestamos?fmt(r.prestamos):'—'}</td><td>{r.adelantos?fmt(r.adelantos):'—'}</td>
+          <td className="text-blue" style={{fontWeight:600}}>{fmt(r.realQuincenal)}</td>
+          <td className="text-gold" style={{fontWeight:700}}>{fmt(r.totalAPagar)}</td>
+          <td>{r.pagado?'✅':'—'}</td>
+        </tr>)}</tbody>
+      </table></div>
+    </div>;
+  }
+
+  return <div>
+    <div className="section-header"><span className="text-muted">{cerradas.length} quincena(s) cerrada(s)</span></div>
+    {!cerradas.length&&<div style={{textAlign:'center',padding:60,color:'var(--muted)'}}>📂 Sin quincenas cerradas aún</div>}
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:12}}>
+      {cerradas.map(q=>{
+        const tot=(q.rows||[]).reduce((s,r)=>s+r.totalAPagar,0);
+        const real=(q.rows||[]).reduce((s,r)=>s+r.realQuincenal,0);
+        return <div key={q.id} className="card" style={{cursor:'pointer'}} onClick={()=>setSel(q)}>
+          <div className="flex items-center" style={{justifyContent:'space-between',gap:8,marginBottom:7}}>
+            <div style={{fontSize:11,color:'var(--muted)'}}>📅 {fmtDate(q.inicio)} — {fmtDate(q.fin)}</div>
+            <button className="btn btn-danger btn-sm" onClick={e=>{e.stopPropagation();setConfirmDel(q);}}>🗑️</button>
+          </div>
+          <div style={{fontSize:17,fontWeight:700,color:'var(--gold)'}}>{fmt(real)}</div>
+          <div style={{fontSize:11,color:'var(--green)',marginTop:3}}>Total a percibir: {fmt(tot)}</div>
+          <div style={{fontSize:10.5,color:'var(--muted)',marginTop:8}}>{(q.rows||[]).length} empleados · Cerrada {fmtDate(q.fechaCierre)}</div>
+        </div>;
+      })}
+    </div>
+    <Confirm open={!!confirmDel} msg={`¿Eliminar la quincena cerrada ${fmtDate(confirmDel?.inicio)} — ${fmtDate(confirmDel?.fin)}? Esta acción borrará su historial guardado.`} onYes={()=>delQna(confirmDel)} onNo={()=>setConfirmDel(null)}/>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DÍAS DEBIDOS
+══════════════════════════════════════════════════════════ */
+function DiasDebidos(){
+  const [emps]=useState(()=>LS.get(K.emp,[]));
+  const [registros,setRegistros]=useState(()=>LS.get(K.diasDeb,[]));
+  const [modal,setModal]=useState(false);
+  const [tab,setTab]=useState('registro');
+  const blank={empleadoId:'',tipo:'COMISIÓN',descripcion:'',fechas:[{fecha:today(),sucursal:''}],diasDebidos:1};
+  const [f,setF]=useState(blank);
+  const fld=(k,v)=>setF(p=>({...p,[k]:v}));
+  const pendientes=useMemo(()=>registros.filter(r=>r.diasUsados<r.diasDebidos).sort((a,b)=>a.fechaRegistro.localeCompare(b.fechaRegistro)),[registros]);
+  const exportPendXLSX=()=>{
+    const data=pendientes.map(r=>({'Empleado':r.empleadoNombre,'Tipo':r.tipo,'Descripción':r.descripcion,'Fechas':(r.fechas||[]).map(f=>f.fecha+(f.sucursal?' - '+f.sucursal:'')).join(', '),'Días Adeudados':r.diasDebidos,'Días Usados':r.diasUsados,'Pendientes':r.diasDebidos-r.diasUsados,'Fecha Registro':r.fechaRegistro}));
+    const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Días Pendientes');XLSX.writeFile(wb,'DiasDebidos_Pendientes.xlsx');
+  };
+  const exportPendPDF=()=>{
+    const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'letter'});
+    addReportHeader(doc,'DÍAS PENDIENTES A EMPLEADOS');
+    const body=pendientes.map(r=>[r.empleadoNombre.split(' ').slice(0,3).join(' '),r.tipo,r.descripcion.length>35?r.descripcion.slice(0,35)+'…':r.descripcion,(r.fechas||[]).map(f=>fmtDate(f.fecha)+(f.sucursal?' ('+f.sucursal+')':'')).join(', '),r.diasDebidos,r.diasUsados,r.diasDebidos-r.diasUsados]);
+    doc.autoTable({startY:REPORT_HEADER_CONTENT_Y,head:[['Empleado','Tipo','Descripción','Fechas','Adeudados','Usados','Pendientes']],body,theme:'grid',headStyles:{fillColor:[30,30,30],textColor:[255,255,255],fontStyle:'bold',fontSize:8},bodyStyles:{fontSize:8},columnStyles:{2:{cellWidth:40},3:{cellWidth:45}},margin:{left:12,right:12}});
+    const totalPend=pendientes.reduce((s,r)=>s+(r.diasDebidos-r.diasUsados),0);
+    const fy=doc.lastAutoTable.finalY+6;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(40,40,40);
+    doc.text(`Total días pendientes: ${totalPend}`,14,fy);
+    doc.save('DiasDebidos_Pendientes.pdf');
+  };
+
+  const addFecha=()=>setF(p=>({...p,fechas:[...p.fechas,{fecha:today(),sucursal:''}]}));
+  const updFecha=(i,k,v)=>setF(p=>({...p,fechas:p.fechas.map((x,j)=>j===i?{...x,[k]:v}:x)}));
+  const delFecha=(i)=>setF(p=>({...p,fechas:p.fechas.filter((_,j)=>j!==i)}));
+
+  const save=()=>{
+    const emp=emps.find(e=>e.id===f.empleadoId);
+    if(!emp)return;
+    const nuevo={...f,id:uuid(),empleadoNombre:emp.nombre,diasDebidos:+f.diasDebidos,diasUsados:0,activo:true,fechaRegistro:today()};
+    const up=[nuevo,...registros];setRegistros(up);LS.set(K.diasDeb,up);setF(blank);setModal(false);
+  };
+  const del=(id)=>{const up=registros.filter(r=>r.id!==id);setRegistros(up);LS.set(K.diasDeb,up);};
+
+  // Balance por empleado
+  const balances=useMemo(()=>{
+    const b={};
+    registros.forEach(r=>{if(!b[r.empleadoId])b[r.empleadoId]={nombre:r.empleadoNombre,total:0,usados:0};b[r.empleadoId].total+=r.diasDebidos;b[r.empleadoId].usados+=r.diasUsados;});
+    return b;
+  },[registros]);
+
+  return <div>
+    <div className="section-header">
+      <div>
+        <div className="section-title">📅 Días que se le deben a empleados</div>
+        <p className="text-muted" style={{fontSize:11,marginTop:3}}>Comisiones, días festivos trabajados, aperturas. Al registrar incidencia "FALTA COMISIÓN / DÍA TRABAJADO" se descuenta del registro más antiguo primero.</p>
+      </div>
+      <button className="btn btn-primary" onClick={()=>setModal(true)}>+ Registrar Días</button>
+    </div>
+    <div className="tabs">
+      <button className={`tab ${tab==='registro'?'active':''}`} onClick={()=>setTab('registro')}>📋 Registro</button>
+      <button className={`tab ${tab==='pendientes'?'active':''}`} onClick={()=>setTab('pendientes')}>⏳ Días Pendientes{pendientes.length>0?<span className="badge badge-gold" style={{marginLeft:6,fontSize:10}}>{pendientes.length}</span>:null}</button>
+    </div>
+    {tab==='pendientes'&&<div>
+      <div className="section-header">
+        <span className="text-muted" style={{fontSize:12}}>{pendientes.length} registro(s) con saldo pendiente</span>
+        <div className="flex gap-2">
+          <button className="btn btn-secondary" onClick={exportPendXLSX}>📊 Excel</button>
+          <button className="btn btn-secondary" onClick={exportPendPDF}>📄 PDF</button>
+        </div>
+      </div>
+      {!pendientes.length&&<div style={{textAlign:'center',padding:60,color:'var(--muted)'}}>✅ Sin días pendientes</div>}
+      {pendientes.length>0&&<div className="table-wrap"><table>
+        <thead><tr><th>Empleado</th><th>Tipo</th><th>Descripción</th><th>Fechas</th><th>Adeudados</th><th>Usados</th><th>Pendientes</th></tr></thead>
+        <tbody>{pendientes.map(r=>{const saldo=r.diasDebidos-r.diasUsados;return <tr key={r.id}>
+          <td style={{fontWeight:500}}>{r.empleadoNombre}</td>
+          <td><span className={`badge ${r.tipo==='COMISIÓN'?'badge-orange':'badge-blue'}`}>{r.tipo}</span></td>
+          <td className="text-muted" style={{fontSize:11,maxWidth:200,whiteSpace:'normal'}}>{r.descripcion}</td>
+          <td style={{fontSize:11,color:'var(--muted)'}}>{(r.fechas||[]).map((f,i)=><div key={i}>{fmtDate(f.fecha)}{f.sucursal?` — ${f.sucursal}`:''}</div>)}</td>
+          <td style={{textAlign:'center',fontWeight:600}}>{r.diasDebidos}</td>
+          <td style={{textAlign:'center'}}><span className="badge badge-green">{r.diasUsados}</span></td>
+          <td style={{textAlign:'center'}}><span className="badge badge-gold" style={{fontSize:13,fontWeight:700}}>{saldo}</span></td>
+        </tr>;})}
+        </tbody>
+        <tfoot><tr className="tr-total"><td colSpan={6}>Total días pendientes</td><td style={{textAlign:'center'}}>{pendientes.reduce((s,r)=>s+(r.diasDebidos-r.diasUsados),0)}</td></tr></tfoot>
+      </table></div>}
+    </div>}
+    {tab==='registro'&&<div>
+
+    {/* Resumen por empleado */}
+    {Object.keys(balances).length>0&&<div className="card mb-4">
+      <div className="section-title mb-3">Balance por Empleado</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:10}}>
+        {Object.entries(balances).map(([empId,b])=>{
+          const saldo=b.total-b.usados;
+          const pct=b.total>0?Math.round(b.usados/b.total*100):0;
+          return <div key={empId} style={{background:'var(--panel2)',borderRadius:8,padding:12}}>
+            <div style={{fontSize:12,fontWeight:500,marginBottom:4}}>{b.nombre.split(' ').slice(0,2).join(' ')}</div>
+            <div className="flex items-center" style={{justifyContent:'space-between',marginBottom:4}}>
+              <span style={{fontSize:11,color:'var(--muted)'}}>Pendientes</span>
+              <span style={{fontSize:14,fontWeight:700,color:saldo>0?'var(--gold)':'var(--green)'}}>{saldo} día(s)</span>
+            </div>
+            <div className="dias-bar"><div className="dias-fill" style={{width:`${pct}%`,background:'var(--green)'}}/></div>
+            <div style={{fontSize:10,color:'var(--muted)',marginTop:3}}>{b.usados} usados / {b.total} total</div>
+          </div>;
+        })}
+      </div>
+    </div>}
+
+    <div className="table-wrap"><table>
+      <thead><tr><th>Empleado</th><th>Tipo</th><th>Descripción</th><th>Fechas</th><th>Días Adeudados</th><th>Días Usados</th><th>Saldo</th><th></th></tr></thead>
+      <tbody>
+        {!registros.length&&<tr><td colSpan={8} style={{textAlign:'center',color:'var(--muted)',padding:32}}>Sin registros</td></tr>}
+        {registros.map(r=>{
+          const saldo=r.diasDebidos-r.diasUsados;
+          return <tr key={r.id}>
+            <td style={{fontWeight:500}}>{r.empleadoNombre}</td>
+            <td><span className={`badge ${r.tipo==='COMISIÓN'?'badge-orange':'badge-blue'}`}>{r.tipo}</span></td>
+            <td className="text-muted" style={{fontSize:11,maxWidth:200,whiteSpace:'normal'}}>{r.descripcion}</td>
+            <td style={{fontSize:11,color:'var(--muted)'}}>{(r.fechas||[]).map((f,i)=><div key={i}>{fmtDate(f.fecha)}{f.sucursal?` — ${f.sucursal}`:''}</div>)}</td>
+            <td style={{textAlign:'center',fontWeight:600}}>{r.diasDebidos}</td>
+            <td style={{textAlign:'center'}}><span className="badge badge-green">{r.diasUsados}</span></td>
+            <td style={{textAlign:'center'}}><span className={`badge ${saldo>0?'badge-gold':'badge-gray'}`}>{saldo}</span></td>
+            <td><button className="btn btn-danger btn-sm" onClick={()=>del(r.id)}>✕</button></td>
+          </tr>;
+        })}
+      </tbody>
+    </table></div>
+    </div>}
+
+    <Modal open={modal} onClose={()=>setModal(false)} title="Registrar Días Debidos" lg>
+      <div className="form-row">
+        <div className="form-group"><label>Empleado</label><select value={f.empleadoId} onChange={e=>fld('empleadoId',e.target.value)}><option value="">— Seleccionar —</option>{emps.filter(e=>e.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div>
+        <div className="form-group"><label>Tipo</label><div className="flex gap-2">{['COMISIÓN','DÍA TRABAJADO'].map(t=><button key={t} type="button" className={`btn btn-sm ${f.tipo===t?'btn-primary':'btn-secondary'}`} onClick={()=>fld('tipo',t)}>{t}</button>)}</div></div>
+      </div>
+      <div className="form-row c1"><div className="form-group"><label>Descripción (ej: Salida del 12/abr/2026 a Saltillo y Monterrey)</label><input value={f.descripcion} onChange={e=>fld('descripcion',e.target.value.toUpperCase())}/></div></div>
+      <div className="form-row c1"><div className="form-group"><label>Total de días a deber</label><input type="number" value={f.diasDebidos} min={1} onChange={e=>fld('diasDebidos',+e.target.value)}/></div></div>
+      <div style={{marginBottom:12}}>
+        <div className="flex items-center" style={{justifyContent:'space-between',marginBottom:8}}>
+          <label>Fechas de la comisión / días trabajados</label>
+          <button className="btn btn-secondary btn-sm" onClick={addFecha}>+ Agregar fecha</button>
+        </div>
+        {f.fechas.map((fx,i)=><div key={i} className="flex gap-2 mb-2 items-center">
+          <input type="date" value={fx.fecha} onChange={e=>updFecha(i,'fecha',e.target.value)} style={{width:140}}/>
+          <input placeholder="Sucursal/lugar (opcional)" value={fx.sucursal} onChange={e=>updFecha(i,'sucursal',e.target.value.toUpperCase())} style={{flex:1}}/>
+          {f.fechas.length>1&&<button className="btn btn-danger btn-sm" onClick={()=>delFecha(i)}>✕</button>}
+        </div>)}
+      </div>
+      <div className="form-actions"><button className="btn btn-secondary" onClick={()=>setModal(false)}>Cancelar</button><button className="btn btn-primary" onClick={save}>💾 Guardar</button></div>
+    </Modal>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   VACACIONES
+══════════════════════════════════════════════════════════ */
+function Vacaciones(){
+  const [emps]=useState(()=>LS.get(K.emp,[]));
+  const [vacSaldo,setVacSaldo]=useState(()=>LS.get(K.vacSaldo,{}));
+  const [incs]=useState(()=>LS.get(K.inc,[]));
+  const [sel,setSel]=useState(null);
+  const [modalAjuste,setModalAjuste]=useState(false);
+  const [ajuste,setAjuste]=useState({empId:'',dias:0,motivo:''});
+  const [search,setSearch]=useState('');
+
+  const getSaldo=(emp)=>{
+    if(vacSaldo[emp.id]!==undefined)return vacSaldo[emp.id];
+    return emp.diasVacaciones||12;
+  };
+
+  const vacUsadasIncs=(emp)=>incs.filter(i=>i.empleadoId===emp.id&&i.tipo==='FALTA POR VACACIONES').length;
+
+  const saveAjuste=()=>{
+    if(!ajuste.empId)return;
+    const vs={...vacSaldo,[ajuste.empId]:+ajuste.dias};
+    setVacSaldo(vs);LS.set(K.vacSaldo,vs);setModalAjuste(false);setAjuste({empId:'',dias:0,motivo:''});
+  };
+
+  const activos=emps.filter(e=>e.activo&&e.nombre.toLowerCase().includes(search.toLowerCase()));
+
+  const exportVacPDF=()=>{
+    const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'letter'});
+    addReportHeader(doc,'CONTROL DE VACACIONES');
+    const body=activos.map(e=>{
+      const saldo=getSaldo(e);const porAño=e.diasVacaciones||12;const usados=vacUsadasIncs(e);
+      const pct=porAño>0?Math.min(100,Math.round((porAño-saldo)/porAño*100)):0;
+      return [e.numero,e.nombre,e.sucursal,porAño,usados,saldo,pct+'%'];
+    });
+    doc.autoTable({startY:REPORT_HEADER_CONTENT_Y,head:[['#','Nombre','Sucursal','Días/Año','Usados (Inc.)','Saldo Disp.','% Usado']],body,theme:'grid',headStyles:{fillColor:[30,30,30],textColor:[255,255,255],fontStyle:'bold',fontSize:9},bodyStyles:{fontSize:9},margin:{left:14,right:14},didParseCell:d=>{if(d.section==='body'&&d.column.index===5){const v=+d.cell.raw;d.cell.styles.textColor=v<=2?[200,30,30]:v<=5?[180,120,0]:[20,150,80];d.cell.styles.fontStyle='bold';}}});
+    const totalDias=activos.reduce((s,e)=>s+getSaldo(e),0);
+    const fy=doc.lastAutoTable.finalY+6;doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,100);
+    doc.text(`Total días disponibles: ${totalDias}  |  Empleados activos: ${activos.length}`,14,fy);
+    doc.save('Vacaciones_GF.pdf');
+  };
+
+  return <div>
+    <div className="section-header">
+      <div>
+        <div className="section-title">🏖️ Control de Vacaciones</div>
+        <p className="text-muted" style={{fontSize:11,marginTop:3}}>El saldo se actualiza cuando guardas las vacaciones en el módulo de Empleados o al hacer un ajuste manual aquí.</p>
+      </div>
+      <div className="flex gap-2">
+        <div className="search-bar"><span className="search-icon">🔍</span><input placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <button className="btn btn-secondary" onClick={exportVacPDF}>📄 PDF</button>
+        <button className="btn btn-secondary" onClick={()=>setModalAjuste(true)}>⚙️ Ajuste Manual</button>
+      </div>
+    </div>
+
+    <div className="table-wrap"><table>
+      <thead><tr><th>#</th><th>Nombre</th><th>Sucursal</th><th>Días por Año</th><th>Días por Incidencias</th><th>Saldo Disponible</th><th>% Usado</th></tr></thead>
+      <tbody>
+        {activos.map(e=>{
+          const saldo=getSaldo(e);
+          const porAño=e.diasVacaciones||12;
+          const usadosInc=vacUsadasIncs(e);
+          const pct=porAño>0?Math.min(100,Math.round((porAño-saldo)/porAño*100)):0;
+          return <tr key={e.id} onClick={()=>setSel(e===sel?null:e)} style={{cursor:'pointer'}}>
+            <td className="text-muted" style={{fontSize:10.5}}>{e.numero}</td>
+            <td style={{fontWeight:500}}>{e.nombre}</td>
+            <td><span className="badge badge-gray">{e.sucursal}</span></td>
+            <td style={{textAlign:'center'}}>{porAño}</td>
+            <td style={{textAlign:'center'}}><span className="badge badge-red">{usadosInc}</span></td>
+            <td style={{textAlign:'center'}}>
+              <span className={`badge ${saldo>5?'badge-green':saldo>2?'badge-gold':'badge-red'}`} style={{fontSize:13,fontWeight:700}}>{saldo}</span>
+            </td>
+            <td style={{minWidth:120}}>
+              <div className="flex items-center gap-2">
+                <div className="dias-bar" style={{flex:1}}><div className="dias-fill" style={{width:`${pct}%`,background:pct>80?'var(--red)':pct>50?'var(--gold)':'var(--green)'}}/></div>
+                <span style={{fontSize:10.5,color:'var(--muted)',minWidth:30}}>{pct}%</span>
+              </div>
+            </td>
+          </tr>;
+        })}
+      </tbody>
+    </table></div>
+
+    {sel&&<div className="card mt-4" style={{marginTop:16}}>
+      <div className="section-title mb-3">Detalle — {sel.nombre}</div>
+      <div className="kpi-grid">
+        <div className="kpi"><div className="kpi-label">Días por año</div><div className="kpi-value">{sel.diasVacaciones||12}</div></div>
+        <div className="kpi"><div className="kpi-label">Saldo disponible</div><div className="kpi-value text-green">{getSaldo(sel)}</div></div>
+        <div className="kpi"><div className="kpi-label">Usados (incidencias)</div><div className="kpi-value text-red">{vacUsadasIncs(sel)}</div></div>
+      </div>
+      <div className="section-title mb-2" style={{fontSize:12}}>Historial de FALTA POR VACACIONES</div>
+      {incs.filter(i=>i.empleadoId===sel.id&&i.tipo==='FALTA POR VACACIONES').length===0?
+        <p className="text-muted" style={{fontSize:12}}>Sin registros</p>:
+        <div className="table-wrap"><table>
+          <thead><tr><th>Fecha</th><th>Motivo</th></tr></thead>
+          <tbody>{incs.filter(i=>i.empleadoId===sel.id&&i.tipo==='FALTA POR VACACIONES').sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(i=><tr key={i.id}><td>{fmtDate(i.fecha)}</td><td className="text-muted">{i.motivo||'—'}</td></tr>)}</tbody>
+        </table></div>
+      }
+    </div>}
+
+    <Modal open={modalAjuste} onClose={()=>setModalAjuste(false)} title="⚙️ Ajuste Manual de Saldo Vacacional">
+      <p className="text-muted mb-3" style={{fontSize:12}}>Establece directamente el saldo disponible del empleado. Usa esto para correcciones o para asignar el saldo inicial.</p>
+      <div className="form-row c1"><div className="form-group"><label>Empleado</label><select value={ajuste.empId} onChange={e=>setAjuste(p=>({...p,empId:e.target.value,dias:getSaldo(emps.find(x=>x.id===e.target.value)||{})}))}><option value="">— Seleccionar —</option>{emps.filter(e=>e.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e=><option key={e.id} value={e.id}>{e.nombre} (actual: {getSaldo(e)} días)</option>)}</select></div></div>
+      <div className="form-row"><div className="form-group"><label>Nuevo saldo (días disponibles)</label><input type="number" value={ajuste.dias} min={0} onChange={e=>setAjuste(p=>({...p,dias:+e.target.value}))}/></div><div className="form-group"><label>Motivo del ajuste</label><input value={ajuste.motivo} onChange={e=>setAjuste(p=>({...p,motivo:e.target.value}))}/></div></div>
+      <div className="form-actions"><button className="btn btn-secondary" onClick={()=>setModalAjuste(false)}>Cancelar</button><button className="btn btn-primary" onClick={saveAjuste}>💾 Aplicar Ajuste</button></div>
+    </Modal>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   APP ROOT
+══════════════════════════════════════════════════════════ */
+const VIEWS=[
+  {section:'OPERACIÓN'},
+  {id:'dashboard',icon:'🏠',label:'Dashboard'},
+  {id:'nomina',icon:'💰',label:'Nómina / Quincena'},
+  {id:'historial',icon:'🗂️',label:'Historial'},
+  {section:'PERSONAL'},
+  {id:'empleados',icon:'👥',label:'Empleados'},
+  {id:'vacaciones',icon:'🏖️',label:'Vacaciones'},
+  {id:'diasdebidos',icon:'📅',label:'Días Debidos'},
+  {section:'CONTROL'},
+  {id:'incidencias',icon:'📋',label:'Incidencias'},
+  {id:'prestamos',icon:'💳',label:'Préstamos y Adelantos'},
+];
+const TITLES={dashboard:'Dashboard',nomina:'Nómina — Quincena Activa',empleados:'Empleados',incidencias:'Incidencias',prestamos:'Préstamos y Adelantos',historial:'Historial de Quincenas',diasdebidos:'Días Debidos a Empleados',vacaciones:'Control de Vacaciones'};
+
+function App(){
+  const [ready,setReady]=useState(false);
+  const [cloudOk,setCloudOk]=useState(null);
+  const [view,setView]=useState('dashboard');
+  const [sidebarOpen,setSidebarOpen]=useState(true);
+  const [syncing,setSyncing]=useState(false);
+
+  useEffect(()=>{
+    GFStore.init().then(online=>{
+      initData();
+      setCloudOk(online);
+      setReady(true);
+    });
+  },[]);
+
+  const syncNow=()=>{
+    setSyncing(true);
+    setTimeout(()=>window.location.reload(),300);
+  };
+
+  if(!ready)return(
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',flexDirection:'column',gap:16,background:'var(--bg)'}}>
+      <div style={{fontSize:38}}>⚙️</div>
+      <div style={{color:'var(--gold)',fontSize:15,fontWeight:700,letterSpacing:'.5px'}}>GF Diversiones — RH &amp; Nóminas</div>
+      <div style={{color:'var(--muted)',fontSize:12}}>Sincronizando con la nube...</div>
+      <div className="gf-loading-bar" style={{marginTop:6}}/>
+    </div>
+  );
+
+  const renderView=()=>{switch(view){case'dashboard':return<Dashboard/>;case'nomina':return<Nomina/>;case'empleados':return<Empleados/>;case'incidencias':return<Incidencias/>;case'prestamos':return<Prestamos/>;case'historial':return<Historial/>;case'diasdebidos':return<DiasDebidos/>;case'vacaciones':return<Vacaciones/>;default:return<Dashboard/>;}};
+  return <>
+    <div className={`sidebar${sidebarOpen?'':' collapsed'}`}>
+      <div className="sidebar-logo"><h1>GF Diversiones</h1><p>Sistema RH & Nóminas</p></div>
+      <nav className="sidebar-nav">
+        {VIEWS.map((v,i)=>v.section
+          ?<div key={i} className="sidebar-group">{v.section}</div>
+          :<button key={v.id} className={`nav-item ${view===v.id?'active':''}`} onClick={()=>setView(v.id)}><span className="nav-icon">{v.icon}</span>{v.label}</button>
+        )}
+      </nav>
+      <div className="sidebar-footer">Grupo Rokma © 2026</div>
+    </div>
+    <div className="main">
+      <div className="topbar">
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <button className="btn-toggle-sidebar" onClick={()=>setSidebarOpen(o=>!o)} title={sidebarOpen?'Ocultar menú':'Mostrar menú'}>
+            {sidebarOpen?'✕':'☰'}
+          </button>
+          <h2>{TITLES[view]}</h2>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:14}}>
+          {cloudOk===true&&<span style={{fontSize:10,color:'var(--green)',display:'flex',alignItems:'center',gap:5}}><span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',display:'inline-block',boxShadow:'0 0 5px var(--green)'}}/>Nube activa</span>}
+          {cloudOk===false&&<span style={{fontSize:10,color:'var(--muted)',display:'flex',alignItems:'center',gap:5}}><span style={{width:6,height:6,borderRadius:'50%',background:'var(--muted)',display:'inline-block'}}/>Sin conexión</span>}
+          <span style={{fontSize:11,color:'var(--muted)'}}>{todayLong()}</span>
+        </div>
+      </div>
+      <div className="content">{renderView()}</div>
+    </div>
+    <button className="fab-sync" onClick={syncNow} title="Sincronizar datos de la nube">
+      {syncing?'⏳':'🔄'}
+    </button>
+  </>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
